@@ -1,0 +1,49 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_34-9bcead4bbfda3fa4353dd3c85b7707bc4b249ac5",
+  "solcVersion": "0.8.34",
+  "solcLongVersion": "0.8.34+commit.80d5c536",
+  "compilerType": "solc",
+  "toolVersions": {
+    "hardhat": "3.16.0"
+  },
+  "userSourceNameMap": {
+    "contracts/IntegrityRegistry.sol": "project/contracts/IntegrityRegistry.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "osaka",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode.linkReferences",
+            "evm.bytecode.object",
+            "evm.bytecode.opcodes",
+            "evm.bytecode.sourceMap",
+            "evm.deployedBytecode.immutableReferences",
+            "evm.deployedBytecode.linkReferences",
+            "evm.deployedBytecode.object",
+            "evm.deployedBytecode.opcodes",
+            "evm.deployedBytecode.sourceMap",
+            "evm.methodIdentifiers"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/contracts/IntegrityRegistry.sol": {
+        "content": "// SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.34;\r\n\r\n/// @title IntegrityRegistry\r\n/// @notice Lưu bằng chứng toàn vẹn cho các phiên bản dữ liệu CSDL.\r\ncontract IntegrityRegistry {\r\n    /// @notice Các hành động hợp lệ của một bản ghi.\r\n    enum Action {\r\n        CREATE,\r\n        UPDATE,\r\n        DELETE\r\n    }\r\n\r\n    /// @notice Bằng chứng của một phiên bản dữ liệu.\r\n    struct Evidence {\r\n        bytes32 dataHash;\r\n        bytes32 actorHash;\r\n        uint64 version;\r\n        uint64 timestamp;\r\n        Action action;\r\n        address writerAddress;\r\n    }\r\n\r\n    /// @notice Ví được phép ghi bằng chứng.\r\n    address public immutable owner;\r\n\r\n    /// @dev Một recordKey có nhiều phiên bản Evidence.\r\n    mapping(bytes32 => Evidence[]) private histories;\r\n\r\n    /// @dev Đánh dấu recordKey đã từng được đăng ký.\r\n    mapping(bytes32 => bool) private registered;\r\n\r\n    /// @dev Danh sách recordKey để Integrity Checker duyệt toàn bộ.\r\n    bytes32[] private recordKeys;\r\n\r\n    /// @notice Phát ra mỗi khi một Evidence mới được ghi.\r\n    event EvidenceAdded(\r\n        bytes32 indexed recordKey,\r\n        uint64 indexed version,\r\n        bytes32 dataHash,\r\n        bytes32 actorHash,\r\n        Action action,\r\n        uint64 timestamp,\r\n        address indexed writerAddress\r\n    );\r\n\r\n    modifier onlyOwner() {\r\n        require(msg.sender == owner, \"only owner can write\");\r\n        _;\r\n    }\r\n\r\n    constructor() {\r\n        owner = msg.sender;\r\n    }\r\n\r\n    /// @notice Thêm một phiên bản bằng chứng mới.\r\n    /// @param recordKey Định danh cố định của bản ghi.\r\n    /// @param dataHash Hash nội dung dữ liệu.\r\n    /// @param actorHash Hash người dùng ứng dụng.\r\n    /// @param expectedVersion Version do backend dự kiến.\r\n    /// @param action CREATE, UPDATE hoặc DELETE.\r\n    function appendEvidence(\r\n        bytes32 recordKey,\r\n        bytes32 dataHash,\r\n        bytes32 actorHash,\r\n        uint64 expectedVersion,\r\n        Action action\r\n    ) external onlyOwner {\r\n        require(recordKey != bytes32(0), \"recordKey is required\");\r\n        require(dataHash != bytes32(0), \"dataHash is required\");\r\n        require(actorHash != bytes32(0), \"actorHash is required\");\r\n\r\n        uint256 currentCount = histories[recordKey].length;\r\n\r\n        // Contract kiểm tra version phải tăng liên tục.\r\n        require(\r\n            uint256(expectedVersion) == currentCount + 1,\r\n            \"invalid version\"\r\n        );\r\n\r\n        if (currentCount == 0) {\r\n            // Version đầu tiên bắt buộc phải là CREATE.\r\n            require(\r\n                action == Action.CREATE,\r\n                \"first action must be CREATE\"\r\n            );\r\n        } else {\r\n            // Bản ghi đã tồn tại thì không được CREATE lần nữa.\r\n            require(\r\n                action != Action.CREATE,\r\n                \"record already exists\"\r\n            );\r\n\r\n            Evidence storage latestEvidence =\r\n                histories[recordKey][currentCount - 1];\r\n\r\n            // Soft delete là trạng thái kết thúc.\r\n            require(\r\n                latestEvidence.action != Action.DELETE,\r\n                \"record already deleted\"\r\n            );\r\n        }\r\n\r\n        uint64 evidenceTimestamp = uint64(block.timestamp);\r\n\r\n        histories[recordKey].push(\r\n            Evidence({\r\n                dataHash: dataHash,\r\n                actorHash: actorHash,\r\n                version: expectedVersion,\r\n                timestamp: evidenceTimestamp,\r\n                action: action,\r\n                writerAddress: msg.sender\r\n            })\r\n        );\r\n\r\n        if (!registered[recordKey]) {\r\n            registered[recordKey] = true;\r\n            recordKeys.push(recordKey);\r\n        }\r\n\r\n        emit EvidenceAdded(\r\n            recordKey,\r\n            expectedVersion,\r\n            dataHash,\r\n            actorHash,\r\n            action,\r\n            evidenceTimestamp,\r\n            msg.sender\r\n        );\r\n    }\r\n\r\n    /// @notice Lấy Evidence mới nhất của một recordKey.\r\n    function getLatestEvidence(\r\n        bytes32 recordKey\r\n    ) external view returns (Evidence memory) {\r\n        uint256 count = histories[recordKey].length;\r\n\r\n        require(count > 0, \"record not found\");\r\n\r\n        return histories[recordKey][count - 1];\r\n    }\r\n\r\n    /// @notice Lấy Evidence theo version, bắt đầu từ version 1.\r\n    function getEvidenceByVersion(\r\n        bytes32 recordKey,\r\n        uint64 version\r\n    ) external view returns (Evidence memory) {\r\n        require(version > 0, \"version must start from 1\");\r\n        require(\r\n            uint256(version) <= histories[recordKey].length,\r\n            \"version not found\"\r\n        );\r\n\r\n        return histories[recordKey][uint256(version - 1)];\r\n    }\r\n\r\n    /// @notice Trả về tổng số phiên bản của recordKey.\r\n    function getVersionCount(\r\n        bytes32 recordKey\r\n    ) external view returns (uint64) {\r\n        return uint64(histories[recordKey].length);\r\n    }\r\n\r\n    /// @notice Kiểm tra recordKey đã từng được đăng ký chưa.\r\n    function exists(bytes32 recordKey) external view returns (bool) {\r\n        return registered[recordKey];\r\n    }\r\n\r\n    /// @notice Trả về tổng số recordKey đã đăng ký.\r\n    function getRecordKeyCount() external view returns (uint256) {\r\n        return recordKeys.length;\r\n    }\r\n\r\n    /// @notice Lấy recordKey theo vị trí để checker duyệt toàn bộ.\r\n    function getRecordKeyAt(\r\n        uint256 index\r\n    ) external view returns (bytes32) {\r\n        require(index < recordKeys.length, \"index out of range\");\r\n\r\n        return recordKeys[index];\r\n    }\r\n}"
+      }
+    }
+  }
+}
