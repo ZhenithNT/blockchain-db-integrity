@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique @db.VarChar(100)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  role         String   @db.VarChar(50) // ADMIN, LECTURER, AUDITOR
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Score {
+  id               Int              @id @default(autoincrement())
+  studentId        String           @map("student_id") @db.VarChar(50)
+  courseCode       String           @map("course_code") @db.VarChar(50)
+  semester         String           @db.VarChar(50)
+  score            String           @db.VarChar(10) // e.g. "8.50"
+  version          Int              @default(1)
+  status           String           @default("ACTIVE") @db.VarChar(20) // ACTIVE, DELETED
+  recordKey        String           @map("record_key") @db.VarChar(66)
+  dataHash         String           @map("data_hash") @db.VarChar(66)
+  blockchainStatus String           @default("PENDING") @map("blockchain_status") @db.VarChar(20) // CONFIRMED, PENDING, FAILED
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  versions        ScoreVersion[]
+  integrityChecks IntegrityCheck[]
+
+  @@unique([studentId, courseCode, semester], name: "unique_student_course_semester")
+  @@index([recordKey])
+  @@map("scores")
+}
+
+model ScoreVersion {
+  id                  Int       @id @default(autoincrement())
+  scoreId             Int       @map("score_id")
+  version             Int
+  score               String    @db.VarChar(10)
+  status              String    @db.VarChar(20)
+  action              String    @db.VarChar(20) // CREATE, UPDATE, DELETE
+  dataHash            String    @map("data_hash") @db.VarChar(66)
+  actorHash           String    @map("actor_hash") @db.VarChar(66)
+  transactionHash     String?   @map("transaction_hash") @db.VarChar(66)
+  blockNumber         BigInt?   @map("block_number")
+  blockchainTimestamp DateTime? @map("blockchain_timestamp")
+  syncStatus          String    @default("PENDING") @map("sync_status") @db.VarChar(20) // CONFIRMED, PENDING, FAILED
+  createdAt           DateTime  @default(now()) @map("created_at")
+
+  scoreRef Score @relation(fields: [scoreId], references: [id], onDelete: Cascade)
+
+  @@unique([scoreId, version], name: "unique_score_version")
+  @@index([scoreId])
+  @@map("score_versions")
+}
+
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  actor      String   @db.VarChar(100)
+  action     String   @db.VarChar(50)
+  target     String   @db.VarChar(100)
+  beforeData String?  @map("before_data") @db.Text
+  afterData  String?  @map("after_data") @db.Text
+  ip         String?  @db.VarChar(50)
+  timestamp  DateTime @default(now())
+
+  @@map("audit_logs")
+}
+
+model IntegrityCheck {
+  id                Int      @id @default(autoincrement())
+  scoreId           Int      @map("score_id")
+  databaseHash      String   @map("database_hash") @db.VarChar(66)
+  blockchainHash    String?  @map("blockchain_hash") @db.VarChar(66)
+  databaseVersion   Int      @map("database_version")
+  blockchainVersion Int?     @map("blockchain_version")
+  result            String   @db.VarChar(20) // VALID, INVALID, PENDING, ERROR
+  details           String   @db.Text
+  checkedAt         DateTime @default(now()) @map("checked_at")
+
+  scoreRef Score @relation(fields: [scoreId], references: [id], onDelete: Cascade)
+
+  @@index([scoreId])
+  @@map("integrity_checks")
+}

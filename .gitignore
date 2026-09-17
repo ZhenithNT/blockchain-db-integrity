@@ -1,8 +1,12 @@
 # Node modules
-/node_modules
+node_modules/
+**/node_modules/
 
 # Compilation output
 /dist
+**/dist
+packages/*/dist
+apps/*/dist
 
 # pnpm deploy output
 /bundle
@@ -30,3 +34,5 @@
 # Snapshot cheatcodes output
 /snapshots
 ignition/deployments/chain-31337/
+deployment-info.json
+

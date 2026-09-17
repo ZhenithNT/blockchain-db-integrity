@@ -3,8 +3,27 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "blockchain:node": "hardhat node",
+    "blockchain:deploy": "hardhat run scripts/deploy-and-sync-config.ts --network localhost",
+    "blockchain:deploy:simulated": "hardhat run scripts/deploy-and-sync-config.ts",
+    "db:migrate": "prisma db push",
+    "db:seed": "tsx database/seed/seed.ts",
+    "dev:api": "tsx watch apps/api/src/index.ts",
+    "dev:web": "vite apps/web",
+    "dev": "concurrently -n \"API,WEB\" -c \"blue,green\" \"npm run dev:api\" \"npm run dev:web\"",
+    "test": "npm run test:contract && npm run test:unit && npm run test:api",
+    "test:contract": "hardhat test",
+    "test:unit": "tsx --test packages/shared/test/hash.test.ts",
+    "test:api": "tsx --test apps/api/test/api.test.ts",
+    "build": "tsc -p packages/shared/tsconfig.json && tsc -p apps/api/tsconfig.json && tsc -p apps/web/tsconfig.json && vite build apps/web",
+    "demo:tamper": "tsx scripts/tamper-database.ts",
+    "demo:restore": "tsx scripts/restore-database.ts",
+    "integrity:check": "tsx scripts/check-integrity.ts"
   },
   "keywords": [],
   "author": "",
@@ -14,9 +33,27 @@
     "@nomicfoundation/hardhat-ignition": "^3.1.8",
     "@nomicfoundation/hardhat-toolbox-viem": "^5.0.7",
     "@types/node": "^22.20.2",
+    "concurrently": "^10.0.5",
     "forge-std": "github:foundry-rs/forge-std#v1.16.2",
     "hardhat": "^3.16.0",
     "typescript": "~6.0.3",
     "viem": "^2.56.5"
+  },
+  "dependencies": {
+    "@integrity/shared": "file:packages/shared",
+    "@prisma/client": "^6.4.1",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "mysql2": "^3.24.4",
+    "prisma": "^6.4.1",
+    "tsx": "^4.23.13",
+    "zod": "^3.25.76"
   }
 }
