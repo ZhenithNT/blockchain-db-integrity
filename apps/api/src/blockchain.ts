@@ -6,7 +6,7 @@ import {
   http,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { localhost } from "viem/chains";
+import { hardhat } from "viem/chains";
 import {
   Action,
   type EvidenceOnChain,
@@ -33,7 +33,7 @@ async function getClients() {
   // 1. Kiểm tra xem Hardhat node HTTP (127.0.0.1:8545) có đang chạy không
   try {
     const testClient = createPublicClient({
-      chain: localhost,
+      chain: hardhat,
       transport: http(config.blockchainRpcUrl, { timeout: 1500 }),
     });
     await testClient.getBlockNumber();
@@ -42,7 +42,7 @@ async function getClients() {
     accountInstance = privateKeyToAccount(config.deployerPrivateKey);
     walletClientInstance = createWalletClient({
       account: accountInstance,
-      chain: localhost,
+      chain: hardhat,
       transport: http(config.blockchainRpcUrl),
     });
     publicClientInstance = testClient;

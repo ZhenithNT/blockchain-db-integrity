@@ -178,7 +178,36 @@ export async function runSeed() {
 
       console.log(`  ✓ Đã tạo điểm mẫu: ${item.studentId} | ${item.courseCode} | ${item.score} [Blockchain: ${bcStatus}]`);
     } else {
-      console.log(`  ℹ Điểm mẫu đã tồn tại: ${item.studentId} | ${item.courseCode}`);
+      try {
+        const onChain = await recordExistsOnChain(recordKey);
+        if (!onChain) {
+          const receipt = await appendEvidenceOnChain(
+            recordKey,
+            dataHash,
+            actorHash,
+            1n,
+            Action.CREATE
+          );
+          await prisma.score.update({
+            where: { id: existingScore.id },
+            data: { blockchainStatus: "CONFIRMED" },
+          });
+          await prisma.scoreVersion.updateMany({
+            where: { scoreId: existingScore.id, version: 1 },
+            data: {
+              transactionHash: receipt.transactionHash,
+              blockNumber: receipt.blockNumber,
+              blockchainTimestamp: receipt.blockchainTimestamp,
+              syncStatus: "CONFIRMED",
+            },
+          });
+          console.log(`  ✓ Đã đồng bộ điểm mẫu lên Blockchain: ${item.studentId} | ${item.courseCode}`);
+        } else {
+          console.log(`  ℹ Điểm mẫu đã tồn tại và đã có trên Blockchain: ${item.studentId} | ${item.courseCode}`);
+        }
+      } catch {
+        console.log(`  ℹ Điểm mẫu đã tồn tại: ${item.studentId} | ${item.courseCode}`);
+      }
     }
   }
 
