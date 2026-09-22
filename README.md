@@ -59,12 +59,6 @@ flowchart TD
 | **Tốc độ truy vấn** | Truy vấn cực nhanh, tìm kiếm, phân trang, lọc theo nhiều tiêu chí. | Tốn phí gas khi ghi, không tối ưu cho tìm kiếm chuỗi phức tạp. |
 | **Tính bất biến** | Có thể bị can thiệp bởi DBA hoặc tài khoản root máy chủ. | **Tuyệt đối bất biến**, không ai có thể sửa hoặc xóa dữ liệu đã ghi lên block. |
 
-### Tại sao không lưu toàn bộ dữ liệu lên Blockchain?
-1. **Chi phí lưu trữ (Gas Cost):** Lưu trữ byte dữ liệu trên blockchain rất đắt đỏ. Lưu trữ chuỗi văn bản dài làm tăng chi phí và kích thước khối không cần thiết.
-2. **Bảo mật và Quyền riêng tư (Privacy & GDPR):** Dữ liệu trên blockchain là công khai đối với tất cả node trong mạng lưới. Việc lưu trữ trực tiếp thông tin sinh viên và điểm số sẽ vi phạm quyền riêng tư.
-3. **Khả năng mở rộng và hiệu năng truy vấn:** Blockchain không hỗ trợ tìm kiếm full-text, phân trang hoặc các câu truy vấn JOIN phức tạp như SQL.
-4. **Giải pháp tối ưu:** Kết hợp mô hình băm mật mã: MySQL phục vụ ứng dụng nghiệp vụ, Blockchain đóng vai trò "Trọng tài tối cao" lưu trữ dấu vân tay số không thể chối bỏ.
-
 ---
 
 ## 4. Cấu Trúc Thư Mục Dự Án
@@ -270,16 +264,3 @@ Kiểm tra biên dịch production toàn dự án:
 ```powershell
 npm.cmd run build
 ```
-
----
-
-## 10. Xử Lý Sự Cố Thường Gặp (Troubleshooting)
-
-1. **PowerShell báo lỗi file script không chạy được (`npm.ps1 cannot be loaded`):**
-   - *Giải pháp:* Sử dụng `npm.cmd` và `npx.cmd` thay vì `npm`/`npx`.
-2. **Không kết nối được MySQL (Error 10061):**
-   - *Giải pháp:* Kiểm tra dịch vụ MySQL/MariaDB đã được khởi động trên port 3306 chưa (`Test-NetConnection -ComputerName 127.0.0.1 -Port 3306`).
-3. **Hardhat báo lỗi non-local installation:**
-   - *Giải pháp:* Dự án đã cấu hình đầy đủ trong `node_modules` cục bộ. Chạy `npm.cmd install` nếu vừa clone mã nguồn mới.
-4. **Trạng thái hiển thị PENDING:**
-   - *Giải pháp:* Bấm nút **"Quét toàn bộ CSDL"** trên Dashboard hoặc trang **"Kiểm tra Toàn vẹn"** để hệ thống chạy chu trình đối chiếu hash và cập nhật trạng thái mới nhất.
