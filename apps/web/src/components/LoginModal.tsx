@@ -7,12 +7,26 @@ interface LoginModalProps {
 }
 
 export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess }) => {
+  const [tab, setTab] = useState<"LOGIN" | "REGISTER">("LOGIN");
+
+  // Login form state
   const [username, setUsername] = useState("admin");
   const [password, setPassword] = useState("Admin@123");
+
+  // Register form state
+  const [regRole, setRegRole] = useState<"STUDENT" | "LECTURER">("STUDENT");
+  const [regFullName, setRegFullName] = useState("");
+  const [regCode, setRegCode] = useState("");
+  const [regUsername, setRegUsername] = useState("");
+  const [regPassword, setRegPassword] = useState("");
+  const [regEmail, setRegEmail] = useState("");
+  const [regExtra, setRegExtra] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -27,101 +41,376 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess }) => {
     }
   };
 
-  const handleQuickSelect = (u: string, p: string) => {
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setSuccessMsg(null);
+
+    if (!regUsername || !regPassword || !regFullName) {
+      setError("Vui lòng điền đầy đủ họ tên, tên đăng nhập và mật khẩu.");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const res = await api.register({
+        username: regUsername,
+        password: regPassword,
+        fullName: regFullName,
+        role: regRole,
+        code: regCode || undefined,
+        email: regEmail || undefined,
+        extraInfo: regExtra || undefined,
+      });
+
+      setSuccessMsg("Đăng ký tài khoản thành công! Đang tự động đăng nhập...");
+      setTimeout(() => {
+        onLoginSuccess(res.user);
+      }, 1000);
+    } catch (err: any) {
+      setError(err.message || "Đăng ký thất bại");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fillQuickDemo = (u: string, p: string) => {
     setUsername(u);
     setPassword(p);
   };
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-content" style={{ maxWidth: "480px", padding: "2rem" }}>
-        <div style={{ textAlign: "center", marginBottom: "1.75rem" }}>
-          <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>⛓️ 🛡️</div>
-          <h2 style={{ fontSize: "1.4rem", fontWeight: 800, color: "#f8fafc" }}>
-            Hệ Thống Kiểm Tra Toàn Vẹn CSDL
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "linear-gradient(135deg, #1e1e24 0%, #2b0c0d 50%, #1f2937 100%)",
+        padding: "1.5rem",
+      }}
+    >
+      <div
+        className="ptit-card"
+        style={{
+          width: "100%",
+          maxWidth: "480px",
+          padding: "2.25rem",
+          boxShadow: "0 20px 40px rgba(0, 0, 0, 0.4)",
+          borderRadius: "16px",
+          background: "#ffffff",
+        }}
+      >
+        {/* PTIT Branding Header */}
+        <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
+          <div
+            style={{
+              width: "60px",
+              height: "60px",
+              borderRadius: "14px",
+              background: "var(--primary-ptit)",
+              color: "#ffffff",
+              fontSize: "1.5rem",
+              fontWeight: 900,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto 0.75rem auto",
+              boxShadow: "0 6px 16px rgba(152, 27, 30, 0.35)",
+            }}
+          >
+            PTIT
+          </div>
+          <h2 style={{ fontSize: "1.3rem", fontWeight: 800, color: "var(--primary-ptit)", textTransform: "uppercase" }}>
+            HỆ THỐNG QUẢN LÝ ĐÀO TẠO
           </h2>
-          <p style={{ fontSize: "0.85rem", color: "#94a3b8", marginTop: "0.25rem" }}>
-            Ứng dụng công nghệ Blockchain bảo vệ dữ liệu điểm sinh viên
+          <p style={{ fontSize: "0.82rem", color: "#64748b", marginTop: "0.25rem" }}>
+            Chứng thực & Lưu vết Toàn vẹn Dữ liệu bằng Blockchain
           </p>
         </div>
 
+        {/* Tab Switcher: Đăng nhập vs Đăng ký */}
+        <div
+          style={{
+            display: "flex",
+            background: "#f1f5f9",
+            borderRadius: "8px",
+            padding: "4px",
+            marginBottom: "1.5rem",
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => {
+              setTab("LOGIN");
+              setError(null);
+            }}
+            style={{
+              flex: 1,
+              padding: "0.55rem 0",
+              border: "none",
+              borderRadius: "6px",
+              fontWeight: 700,
+              fontSize: "0.88rem",
+              cursor: "pointer",
+              background: tab === "LOGIN" ? "#ffffff" : "transparent",
+              color: tab === "LOGIN" ? "var(--primary-ptit)" : "#64748b",
+              boxShadow: tab === "LOGIN" ? "0 2px 6px rgba(0,0,0,0.08)" : "none",
+              transition: "all 0.2s ease",
+            }}
+          >
+            🔑 Đăng Nhập
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setTab("REGISTER");
+              setError(null);
+            }}
+            style={{
+              flex: 1,
+              padding: "0.55rem 0",
+              border: "none",
+              borderRadius: "6px",
+              fontWeight: 700,
+              fontSize: "0.88rem",
+              cursor: "pointer",
+              background: tab === "REGISTER" ? "#ffffff" : "transparent",
+              color: tab === "REGISTER" ? "var(--primary-ptit)" : "#64748b",
+              boxShadow: tab === "REGISTER" ? "0 2px 6px rgba(0,0,0,0.08)" : "none",
+              transition: "all 0.2s ease",
+            }}
+          >
+            ✨ Đăng Ký Tài Khoản
+          </button>
+        </div>
+
         {error && (
-          <div style={{ background: "rgba(239, 68, 68, 0.2)", border: "1px solid #ef4444", color: "#fca5a5", padding: "0.75rem", borderRadius: "8px", fontSize: "0.85rem", marginBottom: "1.25rem" }}>
+          <div
+            style={{
+              background: "var(--invalid-bg)",
+              border: "1px solid var(--invalid-border)",
+              color: "var(--invalid)",
+              padding: "0.75rem",
+              borderRadius: "8px",
+              fontSize: "0.85rem",
+              marginBottom: "1.25rem",
+            }}
+          >
             ⚠️ {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-          <div>
-            <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, color: "#cbd5e1", marginBottom: "0.35rem" }}>
-              Tên đăng nhập
-            </label>
-            <input
-              type="text"
-              className="input-field"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-            />
-          </div>
-
-          <div>
-            <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, color: "#cbd5e1", marginBottom: "0.35rem" }}>
-              Mật khẩu
-            </label>
-            <input
-              type="password"
-              className="input-field"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="btn btn-primary"
-            style={{ width: "100%", marginTop: "0.5rem", padding: "0.75rem" }}
-            disabled={loading}
+        {successMsg && (
+          <div
+            style={{
+              background: "var(--valid-bg)",
+              border: "1px solid var(--valid-border)",
+              color: "var(--valid)",
+              padding: "0.75rem",
+              borderRadius: "8px",
+              fontSize: "0.85rem",
+              marginBottom: "1.25rem",
+            }}
           >
-            {loading ? "Đang xử lý..." : "Đăng Nhập"}
-          </button>
-        </form>
+            ✓ {successMsg}
+          </div>
+        )}
 
-        <div style={{ marginTop: "1.5rem", paddingTop: "1.25rem", borderTop: "1px solid #334155" }}>
-          <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginBottom: "0.6rem", textAlign: "center" }}>
-            ⚡ Chọn nhanh tài khoản demo mẫu:
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem" }}>
+        {/* --- FORM ĐĂNG NHẬP --- */}
+        {tab === "LOGIN" && (
+          <form onSubmit={handleLoginSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label" style={{ fontWeight: 600 }}>Tên đăng nhập:</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="Nhập tên đăng nhập (VD: admin, lecturer, sv_nghia)"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label" style={{ fontWeight: 600 }}>Mật khẩu:</label>
+              <input
+                type="password"
+                className="form-input"
+                placeholder="Nhập mật khẩu..."
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+
             <button
-              type="button"
-              className="btn btn-outline btn-sm"
-              onClick={() => handleQuickSelect("admin", "Admin@123")}
-              style={{ fontSize: "0.75rem", display: "flex", flexDirection: "column", padding: "0.4rem" }}
+              type="submit"
+              className="btn btn-primary"
+              style={{
+                width: "100%",
+                marginTop: "0.5rem",
+                padding: "0.75rem",
+                fontSize: "0.95rem",
+                fontWeight: 700,
+                borderRadius: "8px",
+              }}
+              disabled={loading}
             >
-              <strong>ADMIN</strong>
-              <span style={{ fontSize: "0.65rem", color: "#94a3b8" }}>Toàn quyền</span>
+              {loading ? "Đang xác thực..." : "Đăng Nhập"}
             </button>
+
+            {/* Tài khoản mẫu tiện thử nghiệm */}
+            <div style={{ marginTop: "1rem", borderTop: "1px solid #e2e8f0", paddingTop: "1rem" }}>
+              <div style={{ fontSize: "0.78rem", fontWeight: 700, color: "#64748b", marginBottom: "0.5rem" }}>
+                💡 Tài khoản Quản trị viên khởi tạo hệ thống:
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <button
+                  type="button"
+                  onClick={() => fillQuickDemo("admin", "Admin@123")}
+                  style={{
+                    padding: "0.5rem 0.75rem",
+                    border: "1px solid #cbd5e1",
+                    borderRadius: "6px",
+                    background: "#f8fafc",
+                    fontSize: "0.8rem",
+                    cursor: "pointer",
+                    textAlign: "left",
+                  }}
+                >
+                  🔴 <strong>Quản trị viên (ADMIN)</strong>: `admin` / `Admin@123`
+                </button>
+                <div style={{ fontSize: "0.75rem", color: "#64748b", lineHeight: 1.4 }}>
+                  👉 Bạn có thể tự tạo tài khoản <strong>Sinh viên</strong> hoặc <strong>Giảng viên</strong> mới theo ý mình tại tab <strong>"✨ Đăng Ký Tài Khoản"</strong> ở phía trên!
+                </div>
+              </div>
+            </div>
+          </form>
+        )}
+
+        {/* --- FORM ĐĂNG KÝ TÀI KHOẢN MỚI --- */}
+        {tab === "REGISTER" && (
+          <form onSubmit={handleRegisterSubmit} style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label" style={{ fontWeight: 600 }}>Bạn là:</label>
+              <div style={{ display: "flex", gap: "1rem" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem", cursor: "pointer" }}>
+                  <input
+                    type="radio"
+                    name="regRole"
+                    checked={regRole === "STUDENT"}
+                    onChange={() => setRegRole("STUDENT")}
+                  />
+                  <span>🎓 Sinh viên</span>
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem", cursor: "pointer" }}>
+                  <input
+                    type="radio"
+                    name="regRole"
+                    checked={regRole === "LECTURER"}
+                    onChange={() => setRegRole("LECTURER")}
+                  />
+                  <span>👨‍🏫 Giảng viên</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label" style={{ fontWeight: 600 }}>Họ và tên đầy đủ:</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder={regRole === "STUDENT" ? "VD: Nguyễn Văn An" : "VD: TS. Trần Văn Bình"}
+                value={regFullName}
+                onChange={(e) => setRegFullName(e.target.value)}
+                required
+              />
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label" style={{ fontWeight: 600 }}>
+                  {regRole === "STUDENT" ? "Mã Sinh Viên:" : "Mã Giảng Viên:"}
+                </label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder={regRole === "STUDENT" ? "VD: B23DCAT999" : "VD: GV999"}
+                  value={regCode}
+                  onChange={(e) => setRegCode(e.target.value)}
+                />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label" style={{ fontWeight: 600 }}>
+                  {regRole === "STUDENT" ? "Lớp sinh hoạt:" : "Khoa / Bộ môn:"}
+                </label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder={regRole === "STUDENT" ? "VD: D23CQAT01-B" : "VD: Khoa CNTT 1"}
+                  value={regExtra}
+                  onChange={(e) => setRegExtra(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label" style={{ fontWeight: 600 }}>Tên đăng nhập:</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="VD: sv_an hoặc gv_binh"
+                  value={regUsername}
+                  onChange={(e) => setRegUsername(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label" style={{ fontWeight: 600 }}>Mật khẩu:</label>
+                <input
+                  type="password"
+                  className="form-input"
+                  placeholder="Mật khẩu ít nhất 6 ký tự"
+                  value={regPassword}
+                  onChange={(e) => setRegPassword(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label" style={{ fontWeight: 600 }}>Email liên hệ:</label>
+              <input
+                type="email"
+                className="form-input"
+                placeholder="VD: user@ptit.edu.vn"
+                value={regEmail}
+                onChange={(e) => setRegEmail(e.target.value)}
+              />
+            </div>
+
             <button
-              type="button"
-              className="btn btn-outline btn-sm"
-              onClick={() => handleQuickSelect("lecturer", "Lecturer@123")}
-              style={{ fontSize: "0.75rem", display: "flex", flexDirection: "column", padding: "0.4rem" }}
+              type="submit"
+              className="btn btn-primary"
+              style={{
+                width: "100%",
+                marginTop: "0.5rem",
+                padding: "0.75rem",
+                fontSize: "0.95rem",
+                fontWeight: 700,
+                borderRadius: "8px",
+              }}
+              disabled={loading}
             >
-              <strong>LECTURER</strong>
-              <span style={{ fontSize: "0.65rem", color: "#94a3b8" }}>Tạo & Sửa điểm</span>
+              {loading ? "Đang xử lý đăng ký..." : "Đăng Ký & Vào Hệ Thống"}
             </button>
-            <button
-              type="button"
-              className="btn btn-outline btn-sm"
-              onClick={() => handleQuickSelect("auditor", "Auditor@123")}
-              style={{ fontSize: "0.75rem", display: "flex", flexDirection: "column", padding: "0.4rem" }}
-            >
-              <strong>AUDITOR</strong>
-              <span style={{ fontSize: "0.65rem", color: "#94a3b8" }}>Chỉ kiểm toán</span>
-            </button>
-          </div>
-        </div>
+          </form>
+        )}
       </div>
     </div>
   );

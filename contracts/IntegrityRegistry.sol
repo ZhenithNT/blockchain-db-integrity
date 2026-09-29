@@ -8,7 +8,8 @@ contract IntegrityRegistry {
     enum Action {
         CREATE,
         UPDATE,
-        DELETE
+        DELETE,
+        RESTORE
     }
 
     /// @notice Bằng chứng của một phiên bản dữ liệu.
@@ -94,11 +95,19 @@ contract IntegrityRegistry {
             Evidence storage latestEvidence =
                 histories[recordKey][currentCount - 1];
 
-            // Soft delete là trạng thái kết thúc.
-            require(
-                latestEvidence.action != Action.DELETE,
-                "record already deleted"
-            );
+            if (latestEvidence.action == Action.DELETE) {
+                // Nếu bản ghi đang bị xóa mềm, thao tác tiếp theo duy nhất hợp lệ là RESTORE.
+                require(
+                    action == Action.RESTORE,
+                    "record deleted, only RESTORE allowed"
+                );
+            } else {
+                // Nếu bản ghi đang hoạt động, không được gọi RESTORE.
+                require(
+                    action != Action.RESTORE,
+                    "record active, cannot RESTORE"
+                );
+            }
         }
 
         uint64 evidenceTimestamp = uint64(block.timestamp);
@@ -179,5 +188,10 @@ contract IntegrityRegistry {
         require(index < recordKeys.length, "index out of range");
 
         return recordKeys[index];
+    }
+
+    /// @notice Trả về toàn bộ danh sách recordKey đã đăng ký trên chuỗi.
+    function getAllRecordKeys() external view returns (bytes32[] memory) {
+        return recordKeys;
     }
 }

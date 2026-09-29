@@ -16,6 +16,7 @@ const ACTOR_HASH = `0x${"55".repeat(32)}` as Hex;
 const CREATE = 0;
 const UPDATE = 1;
 const DELETE = 2;
+const RESTORE = 3;
 
 describe("IntegrityRegistry", function () {
   async function deployRegistryFixture() {
@@ -206,6 +207,7 @@ describe("IntegrityRegistry", function () {
     assert.equal(deletedEvidence.version, 3n);
     assert.equal(deletedEvidence.action, DELETE);
 
+    // Khi đã xóa, không được phép UPDATE tiếp
     await viem.assertions.revertWith(
       registry.write.appendEvidence([
         RECORD_KEY,
@@ -214,8 +216,24 @@ describe("IntegrityRegistry", function () {
         4n,
         UPDATE,
       ]),
-      "record already deleted",
+      "record deleted, only RESTORE allowed",
     );
+
+    // Nhưng được phép RESTORE thành version 4
+    await registry.write.appendEvidence([
+      RECORD_KEY,
+      DATA_HASH_V2,
+      ACTOR_HASH,
+      4n,
+      RESTORE,
+    ]);
+
+    const restoredEvidence =
+      await registry.read.getLatestEvidence([RECORD_KEY]);
+
+    assert.equal(restoredEvidence.version, 4n);
+    assert.equal(restoredEvidence.action, RESTORE);
+    assert.equal(restoredEvidence.dataHash, DATA_HASH_V2);
   });
 
   it("Should reject writes from a non-owner account", async function () {
@@ -265,7 +283,36 @@ describe("IntegrityRegistry", function () {
     const firstRecordKey =
       await registry.read.getRecordKeyAt([0n]);
 
+    const allKeys =
+      await registry.read.getAllRecordKeys();
+
     assert.equal(recordKeyCount, 1n);
     assert.equal(firstRecordKey, RECORD_KEY);
+    assert.equal(allKeys.length, 1);
+    assert.equal(allKeys[0], RECORD_KEY);
+  });
+
+  it("Should reject RESTORE when record is currently ACTIVE", async function () {
+    const { registry } =
+      await networkHelpers.loadFixture(deployRegistryFixture);
+
+    await registry.write.appendEvidence([
+      RECORD_KEY,
+      DATA_HASH_V1,
+      ACTOR_HASH,
+      1n,
+      CREATE,
+    ]);
+
+    await viem.assertions.revertWith(
+      registry.write.appendEvidence([
+        RECORD_KEY,
+        DATA_HASH_V2,
+        ACTOR_HASH,
+        2n,
+        RESTORE,
+      ]),
+      "record active, cannot RESTORE",
+    );
   });
 });

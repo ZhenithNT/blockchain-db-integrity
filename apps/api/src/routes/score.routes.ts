@@ -10,6 +10,7 @@ import {
   getScoreById,
   getScoreHistory,
   getScores,
+  getStudentScores,
   updateScore,
 } from "../services/score.service.js";
 
@@ -26,6 +27,30 @@ scoreRouter.get("/", async (req, res, next) => {
       status: status ? String(status) : undefined,
       semester: semester ? String(semester) : undefined,
     });
+    res.json(scores);
+  } catch (err) {
+    next(err);
+  }
+});
+
+scoreRouter.get("/student/:studentCode", async (req, res, next) => {
+  try {
+    const studentCode = req.params.studentCode;
+    const scores = await getStudentScores(studentCode);
+    res.json(scores);
+  } catch (err) {
+    next(err);
+  }
+});
+
+scoreRouter.get("/my-grades", async (req, res, next) => {
+  try {
+    const user = req.user;
+    if (!user) {
+      return res.status(401).json({ message: "Chưa đăng nhập" });
+    }
+    const studentCode = user.username.startsWith("sv_") ? "B23DCAT211" : user.username;
+    const scores = await getStudentScores(studentCode);
     res.json(scores);
   } catch (err) {
     next(err);

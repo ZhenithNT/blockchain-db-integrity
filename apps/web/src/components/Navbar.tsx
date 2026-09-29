@@ -1,119 +1,182 @@
-import React from "react";
-import type { User } from "../types";
+import React, { useState } from "react";
+import type { NotificationItem, User } from "../types";
 
 interface NavbarProps {
   user: User | null;
-  activeTab: "dashboard" | "scores" | "integrity" | "demo";
-  setActiveTab: (tab: "dashboard" | "scores" | "integrity" | "demo") => void;
   onLogout: () => void;
-  onSwitchRole: (username: string) => void;
+  notifications: NotificationItem[];
+  onOpenNotifications: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   user,
-  activeTab,
-  setActiveTab,
   onLogout,
-  onSwitchRole,
+  notifications,
+  onOpenNotifications,
 }) => {
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+
   return (
-    <header style={{ borderBottom: "1px solid var(--border)", background: "#0f172a", position: "sticky", top: 0, zIndex: 40 }}>
-      <div className="container" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: "70px" }}>
-        {/* Brand */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", cursor: "pointer" }} onClick={() => setActiveTab("dashboard")}>
-          <div style={{ background: "linear-gradient(135deg, #3b82f6, #8b5cf6)", width: "38px", height: "38px", borderRadius: "10px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.2rem", boxShadow: "0 0 12px rgba(59, 130, 246, 0.5)" }}>
-            ⛓️
+    <header
+      style={{
+        background: "var(--bg-header)",
+        color: "#ffffff",
+        height: "60px",
+        padding: "0 1.5rem",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.15)",
+        position: "sticky",
+        top: 0,
+        zIndex: 60,
+      }}
+    >
+      {/* Brand / Logo */}
+      <div style={{ display: "flex", alignItems: "center", gap: "0.85rem" }}>
+        <div
+          style={{
+            width: "36px",
+            height: "36px",
+            borderRadius: "6px",
+            background: "#ffffff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontWeight: 900,
+            fontSize: "1.1rem",
+            color: "var(--primary-ptit)",
+            border: "1px solid rgba(255, 255, 255, 0.3)",
+          }}
+        >
+          PT
+        </div>
+        <div>
+          <div style={{ fontSize: "0.98rem", fontWeight: 700, letterSpacing: "0.01em", textTransform: "uppercase" }}>
+            Cổng Thông Tin Quản Lý Đào Tạo & Toàn Vẹn Điểm Số
           </div>
-          <div>
-            <div style={{ fontWeight: 800, fontSize: "1.05rem", letterSpacing: "-0.02em", color: "#f8fafc" }}>
-              Blockchain DB Integrity
-            </div>
-            <div style={{ fontSize: "0.72rem", color: "#94a3b8" }}>
-              Bảo vệ toàn vẹn CSDL bằng Smart Contract
-            </div>
+          <div style={{ fontSize: "0.72rem", opacity: 0.85 }}>
+            Học viện Công nghệ Bưu chính Viễn thông • Blockchain Hardhat & MySQL
           </div>
         </div>
+      </div>
 
-        {/* Navigation Tabs */}
-        {user && (
-          <nav style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <button
-              className={`btn btn-sm ${activeTab === "dashboard" ? "btn-primary" : "btn-outline"}`}
-              onClick={() => setActiveTab("dashboard")}
+      {/* User Section */}
+      {user ? (
+        <div style={{ display: "flex", alignItems: "center", gap: "1.25rem" }}>
+          {/* User profile pill */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "0.65rem",
+              background: "rgba(0, 0, 0, 0.12)",
+              padding: "0.3rem 0.75rem",
+              borderRadius: "9999px",
+            }}
+          >
+            {/* Avatar Circle */}
+            <div
+              style={{
+                width: "32px",
+                height: "32px",
+                borderRadius: "50%",
+                background: "#ffffff",
+                color: "var(--primary-ptit)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: 700,
+                fontSize: "0.85rem",
+                overflow: "hidden",
+                border: "2px solid #ffffff",
+              }}
             >
-              📊 Tổng quan
-            </button>
-            <button
-              className={`btn btn-sm ${activeTab === "scores" ? "btn-primary" : "btn-outline"}`}
-              onClick={() => setActiveTab("scores")}
-            >
-              🎓 Quản lý Điểm
-            </button>
-            <button
-              className={`btn btn-sm ${activeTab === "integrity" ? "btn-primary" : "btn-outline"}`}
-              onClick={() => setActiveTab("integrity")}
-            >
-              🔍 Kiểm tra Toàn vẹn
-            </button>
-            <button
-              className={`btn btn-sm ${activeTab === "demo" ? "btn-warning" : "btn-outline"}`}
-              onClick={() => setActiveTab("demo")}
-              style={{ fontWeight: 700 }}
-            >
-              ⚡ Demo Tấn công
-            </button>
-          </nav>
-        )}
+              {user.avatarUrl ? (
+                <img src={user.avatarUrl} alt={user.fullName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                user.fullName ? user.fullName.charAt(0) : user.username.charAt(0).toUpperCase()
+              )}
+            </div>
 
-        {/* User Info & Role Switcher */}
-        {user ? (
-          <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <span style={{ fontSize: "0.85rem", color: "#cbd5e1" }}>
-                <strong>{user.username}</strong>
+            {/* Name & Code */}
+            <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.2 }}>
+              <span style={{ fontSize: "0.82rem", fontWeight: 700 }}>
+                {user.fullName || user.username}
               </span>
-              <span className={`badge ${user.role === "ADMIN" ? "badge-role" : user.role === "LECTURER" ? "badge-valid" : "badge-pending"}`}>
-                {user.role}
+              <span style={{ fontSize: "0.72rem", opacity: 0.9 }}>
+                {user.studentCode || user.lecturerCode || user.role}
               </span>
             </div>
 
-            {/* Quick Demo Switch */}
-            <div style={{ display: "flex", alignItems: "center", gap: "0.3rem", background: "#1e293b", padding: "0.25rem", borderRadius: "8px", border: "1px solid #334155" }}>
-              <span style={{ fontSize: "0.7rem", color: "#94a3b8", padding: "0 0.3rem" }}>Đổi vai:</span>
-              <button
-                className="btn btn-sm"
-                style={{ padding: "0.2rem 0.45rem", fontSize: "0.7rem", background: user.role === "ADMIN" ? "#3b82f6" : "transparent" }}
-                onClick={() => onSwitchRole("admin")}
-                title="Đăng nhập tài khoản ADMIN"
-              >
-                Admin
-              </button>
-              <button
-                className="btn btn-sm"
-                style={{ padding: "0.2rem 0.45rem", fontSize: "0.7rem", background: user.role === "LECTURER" ? "#3b82f6" : "transparent" }}
-                onClick={() => onSwitchRole("lecturer")}
-                title="Đăng nhập tài khoản GIẢNG VIÊN"
-              >
-                Giảng viên
-              </button>
-              <button
-                className="btn btn-sm"
-                style={{ padding: "0.2rem 0.45rem", fontSize: "0.7rem", background: user.role === "AUDITOR" ? "#3b82f6" : "transparent" }}
-                onClick={() => onSwitchRole("auditor")}
-                title="Đăng nhập tài khoản KIỂM TOÁN VIÊN"
-              >
-                Kiểm toán
-              </button>
-            </div>
+            {/* Notification Bell */}
+            <button
+              onClick={onOpenNotifications}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "#ffffff",
+                cursor: "pointer",
+                position: "relative",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginLeft: "0.35rem",
+                padding: "4px",
+              }}
+              title="Thông báo"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+              {unreadCount > 0 && (
+                <span
+                  style={{
+                    position: "absolute",
+                    top: "-2px",
+                    right: "-4px",
+                    background: "#ffffff",
+                    color: "var(--primary-ptit)",
+                    borderRadius: "50%",
+                    fontSize: "0.65rem",
+                    fontWeight: 800,
+                    width: "15px",
+                    height: "15px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {unreadCount}
+                </span>
+              )}
+            </button>
 
-            <button className="btn btn-outline btn-sm" onClick={onLogout} title="Đăng xuất">
-              Đăng xuất
+            {/* Logout button */}
+            <button
+              onClick={onLogout}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "#ffffff",
+                cursor: "pointer",
+                padding: "4px",
+                opacity: 0.85,
+              }}
+              title="Đăng xuất"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+              </svg>
             </button>
           </div>
-        ) : (
-          <span style={{ fontSize: "0.85rem", color: "#94a3b8" }}>Chưa đăng nhập</span>
-        )}
-      </div>
+        </div>
+      ) : (
+        <span style={{ fontSize: "0.85rem", opacity: 0.8 }}>Hệ thống quản lý đào tạo</span>
+      )}
     </header>
   );
 };

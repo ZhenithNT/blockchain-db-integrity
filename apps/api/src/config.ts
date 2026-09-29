@@ -1,9 +1,9 @@
 import path from "node:path";
 import dotenv from "dotenv";
 
-// Tải .env từ thư mục gốc hoặc thư mục hiện tại
-dotenv.config({ path: path.resolve(process.cwd(), ".env") });
-dotenv.config();
+// Tải .env từ thư mục gốc hoặc thư mục hiện tại (tự động reload khi đổi contract)
+dotenv.config({ path: path.resolve(process.cwd(), ".env"), override: true });
+dotenv.config({ override: true });
 
 export const config = {
   port: Number(process.env.PORT || 4000),

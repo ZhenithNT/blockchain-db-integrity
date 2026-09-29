@@ -9,9 +9,10 @@ interface DemoAttackViewProps {
 export const DemoAttackView: React.FC<DemoAttackViewProps> = ({ user }) => {
   const [scores, setScores] = useState<Score[]>([]);
   const [selectedScoreId, setSelectedScoreId] = useState<number | null>(null);
+  const [attackType, setAttackType] = useState<"SCORE" | "HISTORY" | "DELETE">("SCORE");
   const [tamperValue, setTamperValue] = useState("10.00");
+  const [historyVersion, setHistoryVersion] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [attacked, setAttacked] = useState(false);
   const [checkResult, setCheckResult] = useState<IntegrityCheckDetail | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -22,9 +23,8 @@ export const DemoAttackView: React.FC<DemoAttackViewProps> = ({ user }) => {
       const list = await api.getScores({ status: "ACTIVE" });
       setScores(list);
       if (list.length > 0 && !selectedScoreId) {
-        // Ưu tiên chọn SV001
-        const sv001 = list.find((s) => s.studentId === "SV001") || list[0];
-        setSelectedScoreId(sv001.id);
+        const nghia = list.find((s) => s.studentId === "B23DCAT211") || list[0];
+        setSelectedScoreId(nghia.id);
       }
     } catch (err) {
       console.error(err);
@@ -37,27 +37,40 @@ export const DemoAttackView: React.FC<DemoAttackViewProps> = ({ user }) => {
 
   const selectedScore = scores.find((s) => s.id === selectedScoreId);
 
-  const handleTamper = async () => {
+  const handleExecuteAttack = async () => {
     if (!selectedScoreId) return;
     if (!isAdmin) {
-      alert("Chỉ tài khoản ADMIN mới có quyền thực hiện mô phỏng tấn công CSDL.");
+      alert("Chỉ tài khoản ADMIN (Phòng Đào tạo) mới được phép thực hiện mô phỏng tấn công.");
       return;
     }
 
     setLoading(true);
     setMessage(null);
+    setCheckResult(null);
+
     try {
-      const res = await api.demoTamper(selectedScoreId, tamperValue);
-      setAttacked(true);
-      setMessage(
-        `🚨 ĐÃ GIẢ MẠO ĐIỂM TRỰC TIẾP TRONG MYSQL: ${res.originalScore} ➔ ${res.tamperedScore} (Bỏ qua Smart Contract!).`
-      );
+      if (attackType === "SCORE") {
+        const res = await api.demoTamper(selectedScoreId, tamperValue);
+        setMessage(`🚨 TẤN CÔNG 1 THÀNH CÔNG: Đã sửa lén điểm trong MySQL thành ${res.tamperedScore} (Bỏ qua Smart Contract!).`);
+      } else if (attackType === "HISTORY") {
+        const res = await api.demoTamperHistory(selectedScoreId, historyVersion, tamperValue);
+        setMessage(`🚨 TẤN CÔNG 2 THÀNH CÔNG: Đã sửa lén bảng lịch sử score_versions (Version ${res.version}) thành ${res.tamperedScore}!`);
+      } else if (attackType === "DELETE") {
+        const res = await api.demoTamperDelete(selectedScoreId);
+        setMessage(`🚨 TẤN CÔNG 3 THÀNH CÔNG: Đã XÓA VẬT LÝ hoàn toàn bản ghi khỏi MySQL!`);
+      }
+
       await loadScores();
-      // Tự động chạy kiểm tra để thấy ngay kết quả INVALID
-      const check = await api.checkIntegrity(selectedScoreId);
-      setCheckResult(check);
+
+      // Automatically run integrity check to reveal detection
+      try {
+        const check = await api.checkIntegrity(selectedScoreId);
+        setCheckResult(check);
+      } catch (checkErr: any) {
+        setMessage((prev) => `${prev} • Kết quả quét phát hiện: ${checkErr.message}`);
+      }
     } catch (err: any) {
-      setMessage(`Lỗi: ${err.message}`);
+      setMessage(`Lỗi tấn công: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -69,9 +82,8 @@ export const DemoAttackView: React.FC<DemoAttackViewProps> = ({ user }) => {
     try {
       const check = await api.checkIntegrity(selectedScoreId);
       setCheckResult(check);
-      await loadScores();
     } catch (err: any) {
-      alert(`Lỗi kiểm tra: ${err.message}`);
+      alert(`Lỗi đối soát: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -80,7 +92,7 @@ export const DemoAttackView: React.FC<DemoAttackViewProps> = ({ user }) => {
   const handleRestore = async () => {
     if (!selectedScoreId) return;
     if (!isAdmin) {
-      alert("Chỉ tài khoản ADMIN mới có quyền thực hiện khôi phục.");
+      alert("Chỉ tài khoản ADMIN mới có quyền khôi phục dữ liệu.");
       return;
     }
 
@@ -88,10 +100,8 @@ export const DemoAttackView: React.FC<DemoAttackViewProps> = ({ user }) => {
     setMessage(null);
     try {
       const res = await api.demoRestore(selectedScoreId);
-      setAttacked(false);
-      setMessage(`✓ ${res.message} (Điểm hiện tại: ${res.score.score}).`);
+      setMessage(`✅ KHÔI PHỤC THÀNH CÔNG: ${res.message} (Điểm hiện tại: ${res.score.score}).`);
       await loadScores();
-      // Kiểm tra lại tính toàn vẹn
       const check = await api.checkIntegrity(selectedScoreId);
       setCheckResult(check);
     } catch (err: any) {
@@ -102,43 +112,56 @@ export const DemoAttackView: React.FC<DemoAttackViewProps> = ({ user }) => {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1.75rem" }}>
-      {/* Header */}
-      <div>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <span style={{ fontSize: "1.5rem" }}>⚡</span>
-          <h1 style={{ fontSize: "1.5rem", fontWeight: 800 }}>
-            Kịch Bản Thuyết Trình: Mô Phỏng Tấn Công & Phát Hiện Giả Mạo
-          </h1>
+    <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+      {/* Top Banner */}
+      <div className="ptit-card">
+        <div className="ptit-card-header">
+          <div>
+            <div className="ptit-card-title">
+              <span>⚡</span>
+              <span>PHÒNG THÍ NGHIỆM TẤN CÔNG & KHÔI PHỤC TOÀN VẸN (DEMO ATTACK LAB)</span>
+            </div>
+            <div style={{ color: "#64748b", fontSize: "0.82rem", marginTop: "0.25rem" }}>
+              Mục tiêu: Chứng minh cơ chế Blockchain phát hiện được mọi can thiệp trực tiếp vào MySQL (sửa điểm, sửa lịch sử, xóa vật lý hàng) và khôi phục dữ liệu hợp lệ.
+            </div>
+          </div>
         </div>
-        <p style={{ color: "#94a3b8", fontSize: "0.85rem", marginTop: "0.25rem" }}>
-          Trực quan hóa cách Blockchain bảo vệ dữ liệu trước hành vi sửa lén CSDL từ quản trị viên bất chính hoặc hacker xâm nhập MySQL
-        </p>
+
+        {/* Warning Banner */}
+        <div style={{ background: "var(--pending-bg)", border: "1px solid var(--pending-border)", padding: "0.75rem 1rem", borderRadius: "8px", fontSize: "0.82rem", color: "#92400e" }}>
+          ⚠️ <strong>Lưu ý kiểm thử:</strong> Tính năng này giả lập các tình huống kẻ tấn công chiếm quyền Root MySQL hoặc DBA sửa lén CSDL. Hệ thống sẽ bỏ qua mọi lớp bảo vệ thông thường và chọc thẳng vào MySQL để kiểm chứng khả năng phát hiện của Smart Contract.
+        </div>
+
+        {message && (
+          <div
+            style={{
+              marginTop: "0.75rem",
+              padding: "0.75rem 1rem",
+              borderRadius: "8px",
+              fontSize: "0.85rem",
+              fontWeight: 600,
+              background: message.includes("THÀNH CÔNG") && !message.includes("🚨") ? "var(--valid-bg)" : "var(--invalid-bg)",
+              border: `1px solid ${message.includes("THÀNH CÔNG") && !message.includes("🚨") ? "var(--valid-border)" : "var(--invalid-border)"}`,
+              color: message.includes("THÀNH CÔNG") && !message.includes("🚨") ? "var(--valid)" : "var(--invalid)",
+            }}
+          >
+            {message}
+          </div>
+        )}
       </div>
 
-      {/* Warning Banner */}
-      <div style={{ background: "rgba(234, 179, 8, 0.1)", border: "1px solid #eab308", borderRadius: "10px", padding: "1rem", color: "#fef08a", fontSize: "0.85rem" }}>
-        ⚠️ <strong>Cảnh Báo Thử Nghiệm:</strong> Tính năng này chỉ hoạt động khi <code>ENABLE_DEMO_ATTACKS=true</code> trong file <code>.env</code> và người dùng đăng nhập tài khoản <code>ADMIN</code>. Mọi thao tác đều được ghi vết vào bảng <code>audit_logs</code>.
-      </div>
-
-      {message && (
-        <div style={{ background: attacked ? "rgba(239, 68, 68, 0.15)" : "#1e293b", border: `1px solid ${attacked ? "#ef4444" : "#10b981"}`, color: attacked ? "#fca5a5" : "#6ee7b7", padding: "0.85rem 1.25rem", borderRadius: "8px", fontSize: "0.9rem", fontWeight: 600 }}>
-          {message}
-        </div>
-      )}
-
-      {/* 3 Steps Visual Flow */}
+      {/* 3 Attack Scenarios Selection Cards */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1rem" }}>
-        {/* Step 1 */}
-        <div className="card" style={{ borderTop: "4px solid #38bdf8" }}>
-          <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "#38bdf8", textTransform: "uppercase" }}>Bước 1: Chọn Bản Ghi Mục Tiêu</div>
-          <div style={{ marginTop: "0.75rem" }}>
-            <label style={{ display: "block", fontSize: "0.75rem", color: "#94a3b8", marginBottom: "0.3rem" }}>
-              Bản ghi điểm:
-            </label>
+        {/* Step 1: Target Selection */}
+        <div className="ptit-card" style={{ borderTop: "4px solid #0284c7" }}>
+          <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "#0284c7", textTransform: "uppercase", marginBottom: "0.5rem" }}>
+            Bước 1: Chọn Bản Ghi Mục Tiêu
+          </div>
+          <div className="form-group">
+            <label className="form-label">Bản ghi điểm sinh viên:</label>
             <select
-              className="input-field"
-              value={selectedScoreId || ""}
+              className="form-select"
+              value={selectedScoreId ?? ""}
               onChange={(e) => {
                 setSelectedScoreId(Number(e.target.value));
                 setCheckResult(null);
@@ -147,138 +170,207 @@ export const DemoAttackView: React.FC<DemoAttackViewProps> = ({ user }) => {
             >
               {scores.map((s) => (
                 <option key={s.id} value={s.id}>
-                  {s.studentId} | {s.courseCode} ({s.semester}) — Hiện tại: {s.score}
+                  {s.studentId} | {s.courseCode} ({s.semester}) — Điểm: {s.score}
                 </option>
               ))}
             </select>
           </div>
 
           {selectedScore && (
-            <div style={{ background: "#0f172a", padding: "0.75rem", borderRadius: "6px", border: "1px solid #334155", marginTop: "0.75rem", fontSize: "0.75rem" }}>
+            <div style={{ background: "#f8fafc", padding: "0.65rem", borderRadius: "6px", border: "1px solid #e2e8f0", fontSize: "0.78rem" }}>
               <div>SV: <strong>{selectedScore.studentId}</strong></div>
-              <div>Môn: <strong>{selectedScore.courseCode}</strong></div>
-              <div>Điểm CSDL: <strong style={{ color: "#38bdf8", fontSize: "1rem" }}>{selectedScore.score}</strong> (v{selectedScore.version})</div>
+              <div>Môn: <strong>{selectedScore.courseCode}</strong> ({selectedScore.semester})</div>
+              <div>Điểm MySQL: <strong style={{ color: "var(--primary-ptit)", fontSize: "0.95rem" }}>{selectedScore.score}</strong> (v{selectedScore.version})</div>
+              <div className="mono" style={{ fontSize: "0.68rem", color: "#64748b", marginTop: "0.2rem", wordBreak: "break-all" }}>
+                Key: {selectedScore.recordKey}
+              </div>
             </div>
           )}
         </div>
 
-        {/* Step 2 */}
-        <div className="card" style={{ borderTop: "4px solid #ef4444" }}>
-          <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "#ef4444", textTransform: "uppercase" }}>Bước 2: Tấn Công Giả Mạo MySQL</div>
-          <div style={{ marginTop: "0.75rem" }}>
-            <label style={{ display: "block", fontSize: "0.75rem", color: "#94a3b8", marginBottom: "0.3rem" }}>
-              Điểm số sửa lén thành:
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              max="10"
-              className="input-field"
-              value={tamperValue}
-              onChange={(e) => setTamperValue(e.target.value)}
-            />
+        {/* Step 2: Choose Attack Scenario */}
+        <div className="ptit-card" style={{ borderTop: "4px solid var(--invalid)" }}>
+          <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--invalid)", textTransform: "uppercase", marginBottom: "0.5rem" }}>
+            Bước 2: Chọn Phương Thức Tấn Công
           </div>
 
-          <p style={{ fontSize: "0.72rem", color: "#94a3b8", marginTop: "0.5rem" }}>
-            Hành vi: Cố tình UPDATE MySQL nhưng KHÔNG gửi giao dịch đến Blockchain, KHÔNG tăng version.
-          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.45rem", marginBottom: "0.75rem" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.82rem", cursor: "pointer" }}>
+              <input
+                type="radio"
+                name="attackType"
+                checked={attackType === "SCORE"}
+                onChange={() => setAttackType("SCORE")}
+              />
+              <span>1. Sửa trực tiếp điểm trong bảng <code>scores</code></span>
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.82rem", cursor: "pointer" }}>
+              <input
+                type="radio"
+                name="attackType"
+                checked={attackType === "HISTORY"}
+                onChange={() => setAttackType("HISTORY")}
+              />
+              <span>2. Sửa lén bản ghi lịch sử <code>score_versions</code></span>
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "0.82rem", cursor: "pointer" }}>
+              <input
+                type="radio"
+                name="attackType"
+                checked={attackType === "DELETE"}
+                onChange={() => setAttackType("DELETE")}
+              />
+              <span>3. Xóa vật lý bản ghi khỏi MySQL (Physical DELETE)</span>
+            </label>
+          </div>
+
+          {attackType !== "DELETE" && (
+            <div className="form-group">
+              <label className="form-label">Giá trị điểm sửa lén thành:</label>
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                max="10"
+                className="form-input"
+                value={tamperValue}
+                onChange={(e) => setTamperValue(e.target.value)}
+              />
+            </div>
+          )}
+
+          {attackType === "HISTORY" && (
+            <div className="form-group">
+              <label className="form-label">Chọn phiên bản lịch sử cần can thiệp:</label>
+              <input
+                type="number"
+                min="1"
+                max="10"
+                className="form-input"
+                value={historyVersion}
+                onChange={(e) => setHistoryVersion(Number(e.target.value))}
+              />
+            </div>
+          )}
 
           <button
             className="btn btn-danger"
-            style={{ width: "100%", marginTop: "0.75rem" }}
-            onClick={handleTamper}
+            style={{ width: "100%", marginTop: "0.25rem" }}
+            onClick={handleExecuteAttack}
             disabled={loading || !isAdmin}
           >
-            {loading ? "⏳ Đang thực hiện..." : "💥 Kích Hoạt Tấn Công (Sửa MySQL)"}
+            {loading ? "⏳ Đang thực thi..." : "💥 Kích Hoạt Tấn Công MySQL"}
           </button>
         </div>
 
-        {/* Step 3 */}
-        <div className="card" style={{ borderTop: "4px solid #10b981" }}>
-          <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "#10b981", textTransform: "uppercase" }}>Bước 3: Đối Soát & Khôi Phục</div>
-          <p style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: "0.75rem" }}>
-            Checker tính lại SHA-256 từ CSDL và so khớp với Smart Contract để vạch trần dữ liệu giả mạo.
+        {/* Step 3: Verification & Restore */}
+        <div className="ptit-card" style={{ borderTop: "4px solid var(--valid)" }}>
+          <div style={{ fontSize: "0.82rem", fontWeight: 700, color: "var(--valid)", textTransform: "uppercase", marginBottom: "0.5rem" }}>
+            Bước 3: Đối Soát & Khôi Phục Dữ Liệu
+          </div>
+          <p style={{ fontSize: "0.78rem", color: "#64748b", marginBottom: "0.85rem" }}>
+            Checker tính lại SHA-256 từ các giá trị thô và so sánh với bằng chứng bất biến trên Hardhat Blockchain. Khôi phục sẽ đồng bộ lại trạng thái từ on-chain evidence.
           </p>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginTop: "1rem" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.55rem" }}>
             <button
               className="btn btn-primary"
               onClick={handleVerify}
-              disabled={loading}
+              disabled={loading || !selectedScoreId}
             >
-              🔍 Đối Soát Với Blockchain
+              🔍 Đối Soát Với Blockchain Ngay
             </button>
 
             <button
               className="btn btn-success"
               onClick={handleRestore}
-              disabled={loading || !isAdmin}
+              disabled={loading || !isAdmin || !selectedScoreId}
             >
-              🔄 Khôi Phục Lại Dữ Liệu Hợp Lệ
+              🔄 1-Click Khôi Phục Dữ Liệu Hợp Lệ
             </button>
           </div>
         </div>
       </div>
 
-      {/* Verification Result Display */}
+      {/* Verification Result Card */}
       {checkResult && (
         <div
-          className="card"
+          className="ptit-card"
           style={{
-            background: checkResult.result === "VALID" ? "rgba(16, 185, 129, 0.08)" : "rgba(239, 68, 68, 0.12)",
-            border: `2px solid ${checkResult.result === "VALID" ? "#10b981" : "#ef4444"}`,
+            borderLeft: `6px solid ${checkResult.result === "VALID" ? "var(--valid)" : "var(--invalid)"}`,
+            background: checkResult.result === "VALID" ? "var(--valid-bg)" : "var(--invalid-bg)",
           }}
         >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.6rem" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <span style={{ fontSize: "1.5rem" }}>
+              <span style={{ fontSize: "1.4rem" }}>
                 {checkResult.result === "VALID" ? "🛡️" : "🚨"}
               </span>
               <div>
-                <h3 style={{ fontSize: "1.2rem", fontWeight: 800, color: checkResult.result === "VALID" ? "#34d399" : "#f87171" }}>
+                <h3 style={{ fontSize: "1.1rem", fontWeight: 800, color: checkResult.result === "VALID" ? "var(--valid)" : "var(--invalid)" }}>
                   KẾT QUẢ ĐỐI SOÁT: {checkResult.result}
                 </h3>
                 {checkResult.reason && (
                   <span className="badge badge-invalid" style={{ marginTop: "0.2rem" }}>
-                    Lý do: {checkResult.reason}
+                    Lỗi: {checkResult.reason}
                   </span>
                 )}
               </div>
             </div>
 
-            <span className={`badge ${checkResult.result === "VALID" ? "badge-valid" : "badge-invalid"}`} style={{ fontSize: "0.85rem", padding: "0.4rem 0.8rem" }}>
+            <span className={`badge ${checkResult.result === "VALID" ? "badge-valid" : "badge-invalid"}`} style={{ fontSize: "0.85rem", padding: "0.35rem 0.75rem" }}>
               {checkResult.result}
             </span>
           </div>
 
-          <p style={{ fontSize: "0.95rem", color: checkResult.result === "VALID" ? "#d1fae5" : "#fecaca", lineHeight: 1.6 }}>
+          <p style={{ fontSize: "0.9rem", color: "#1f2937", lineHeight: 1.5 }}>
             {checkResult.message}
           </p>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginTop: "1rem", fontSize: "0.78rem" }}>
-            <div style={{ background: "#0f172a", padding: "0.75rem", borderRadius: "8px", border: "1px solid #334155" }}>
-              <strong style={{ color: "#38bdf8" }}>Hash được tính lại từ MySQL hiện tại:</strong>
-              <div className="mono" style={{ color: "#e2e8f0", wordBreak: "break-all", marginTop: "0.2rem" }}>
+          {/* Comparison Details */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginTop: "0.85rem", fontSize: "0.78rem" }}>
+            <div style={{ background: "#ffffff", padding: "0.75rem", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+              <strong style={{ color: "#0284c7" }}>Hash tính lại từ dữ liệu MySQL:</strong>
+              <div className="mono" style={{ color: "#1e293b", wordBreak: "break-all", marginTop: "0.2rem" }}>
                 {checkResult.databaseHash}
               </div>
-              <div style={{ color: "#94a3b8", fontSize: "0.7rem", marginTop: "0.25rem" }}>
-                Dữ liệu input: {checkResult.studentId}|{checkResult.courseCode}|{checkResult.semester}|{checkResult.databaseScore}|{checkResult.databaseVersion}|{checkResult.databaseStatus}
+              <div style={{ color: "#64748b", fontSize: "0.72rem", marginTop: "0.25rem" }}>
+                Điểm: {checkResult.databaseScore} • Version: {checkResult.databaseVersion} • Trạng thái: {checkResult.databaseStatus}
               </div>
             </div>
 
-            <div style={{ background: "#0f172a", padding: "0.75rem", borderRadius: "8px", border: "1px solid #334155" }}>
-              <strong style={{ color: checkResult.result === "VALID" ? "#34d399" : "#f87171" }}>
-                Hash lưu trên Blockchain (Bất biến):
+            <div style={{ background: "#ffffff", padding: "0.75rem", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
+              <strong style={{ color: checkResult.result === "VALID" ? "var(--valid)" : "var(--invalid)" }}>
+                Hash lưu trên Blockchain Smart Contract (Bất biến):
               </strong>
-              <div className="mono" style={{ color: checkResult.result === "VALID" ? "#34d399" : "#f87171", wordBreak: "break-all", marginTop: "0.2rem" }}>
+              <div className="mono" style={{ color: checkResult.result === "VALID" ? "var(--valid)" : "var(--invalid)", wordBreak: "break-all", marginTop: "0.2rem", fontWeight: 700 }}>
                 {checkResult.blockchainHash || "N/A"}
               </div>
-              <div style={{ color: "#94a3b8", fontSize: "0.7rem", marginTop: "0.25rem" }}>
-                Phiên bản trên chain: v{checkResult.blockchainVersion ?? "N/A"} | Hành động: {checkResult.blockchainAction || "N/A"}
+              <div style={{ color: "#64748b", fontSize: "0.72rem", marginTop: "0.25rem" }}>
+                Phiên bản trên Chain: v{checkResult.blockchainVersion ?? "N/A"} • Hành động: {checkResult.blockchainAction || "N/A"}
               </div>
             </div>
           </div>
+
+          {/* Level 2 History Checks */}
+          {checkResult.historyChecks && checkResult.historyChecks.length > 0 && (
+            <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px dashed #cbd5e1" }}>
+              <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "#334155", marginBottom: "0.35rem" }}>
+                Kết quả kiểm tra từng phiên bản lịch sử (Level 2 Deep Check):
+              </div>
+              <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
+                {checkResult.historyChecks.map((h) => (
+                  <span
+                    key={h.version}
+                    className={`badge ${h.matches ? "badge-valid" : "badge-invalid"}`}
+                    style={{ fontSize: "0.72rem" }}
+                  >
+                    v{h.version}: {h.matches ? "VALID" : "INVALID"} ({h.databaseAction})
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -11,32 +11,163 @@ model User {
   id           Int      @id @default(autoincrement())
   username     String   @unique @db.VarChar(100)
   passwordHash String   @map("password_hash") @db.VarChar(255)
-  role         String   @db.VarChar(50) // ADMIN, LECTURER, AUDITOR
+  fullName     String   @default("") @map("full_name") @db.VarChar(100)
+  role         String   @db.VarChar(50) // ADMIN, LECTURER, AUDITOR, STUDENT
+  email        String?  @db.VarChar(150)
+  avatarUrl    String?  @map("avatar_url") @db.VarChar(255)
+  studentCode  String?  @unique @map("student_code") @db.VarChar(50)
+  lecturerCode String?  @unique @map("lecturer_code") @db.VarChar(50)
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
+
+  studentRef  Student?  @relation(fields: [studentCode], references: [studentCode])
+  lecturerRef Lecturer? @relation(fields: [lecturerCode], references: [lecturerCode])
 
   @@map("users")
 }
 
-model Score {
-  id               Int              @id @default(autoincrement())
-  studentId        String           @map("student_id") @db.VarChar(50)
-  courseCode       String           @map("course_code") @db.VarChar(50)
-  semester         String           @db.VarChar(50)
-  score            String           @db.VarChar(10) // e.g. "8.50"
-  version          Int              @default(1)
-  status           String           @default("ACTIVE") @db.VarChar(20) // ACTIVE, DELETED
-  recordKey        String           @map("record_key") @db.VarChar(66)
-  dataHash         String           @map("data_hash") @db.VarChar(66)
-  blockchainStatus String           @default("PENDING") @map("blockchain_status") @db.VarChar(20) // CONFIRMED, PENDING, FAILED
-  createdAt        DateTime         @default(now()) @map("created_at")
-  updatedAt        DateTime         @updatedAt @map("updated_at")
+model Semester {
+  id        Int       @id @default(autoincrement())
+  code      String    @unique @db.VarChar(50) // e.g. "2025-2026.1", "2026-1"
+  name      String    @db.VarChar(100) // e.g. "Học kỳ 1 năm học 2025-2026"
+  startDate DateTime? @map("start_date")
+  endDate   DateTime? @map("end_date")
+  isCurrent Boolean   @default(false) @map("is_current")
+  createdAt DateTime  @default(now()) @map("created_at")
 
+  offerings CourseOffering[]
+
+  @@map("semesters")
+}
+
+model Course {
+  id         Int      @id @default(autoincrement())
+  code       String   @unique @db.VarChar(50) // e.g. "INT1313"
+  name       String   @db.VarChar(150) // e.g. "Cơ sở dữ liệu"
+  credits    Int      @default(3)
+  department String   @default("Khoa Công nghệ Thông tin 1") @db.VarChar(100)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  offerings CourseOffering[]
+
+  @@map("courses")
+}
+
+model Student {
+  id          Int      @id @default(autoincrement())
+  studentCode String   @unique @map("student_code") @db.VarChar(50) // e.g. "B23DCAT211"
+  fullName    String   @map("full_name") @db.VarChar(100)
+  className   String   @default("D23CQAT01-B") @map("class_name") @db.VarChar(50)
+  email       String?  @db.VarChar(150)
+  phone       String?  @db.VarChar(20)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user        User?
+  enrollments Enrollment[]
+
+  @@map("students")
+}
+
+model Lecturer {
+  id           Int      @id @default(autoincrement())
+  lecturerCode String   @unique @map("lecturer_code") @db.VarChar(50) // e.g. "GV001"
+  fullName     String   @map("full_name") @db.VarChar(100)
+  faculty      String   @default("Khoa Công nghệ Thông tin 1") @db.VarChar(100)
+  email        String?  @db.VarChar(150)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user        User?
+  assignments LecturerAssignment[]
+
+  @@map("lecturers")
+}
+
+model CourseOffering {
+  id           Int       @id @default(autoincrement())
+  offeringCode String    @unique @map("offering_code") @db.VarChar(50) // e.g. "INT1313-01"
+  courseCode   String    @map("course_code") @db.VarChar(50)
+  semesterCode String    @map("semester_code") @db.VarChar(50)
+  room         String    @default("A2-301") @db.VarChar(50)
+  maxStudents  Int       @default(60) @map("max_students")
+  status       String    @default("DRAFT") @db.VarChar(20) // DRAFT, SUBMITTED, APPROVED, PUBLISHED, LOCKED
+  submittedAt  DateTime? @map("submitted_at")
+  approvedAt   DateTime? @map("approved_at")
+  publishedAt  DateTime? @map("published_at")
+  lockedAt     DateTime? @map("locked_at")
+  approvedBy   String?   @map("approved_by") @db.VarChar(100)
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  courseRef      Course                 @relation(fields: [courseCode], references: [code])
+  semesterRef    Semester               @relation(fields: [semesterCode], references: [code])
+  assignments    LecturerAssignment[]
+  enrollments    Enrollment[]
+  changeRequests ScoreChangeRequest[]
+
+  @@index([courseCode])
+  @@index([semesterCode])
+  @@map("course_offerings")
+}
+
+model LecturerAssignment {
+  id           Int      @id @default(autoincrement())
+  offeringId   Int      @map("offering_id")
+  lecturerCode String   @map("lecturer_code") @db.VarChar(50)
+  role         String   @default("PRIMARY") @db.VarChar(20) // PRIMARY, ASSISTANT
+  canGrade     Boolean  @default(true) @map("can_grade")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  offeringRef CourseOffering @relation(fields: [offeringId], references: [id], onDelete: Cascade)
+  lecturerRef Lecturer       @relation(fields: [lecturerCode], references: [lecturerCode])
+
+  @@unique([offeringId, lecturerCode], name: "unique_offering_lecturer")
+  @@map("lecturer_assignments")
+}
+
+model Enrollment {
+  id          Int      @id @default(autoincrement())
+  offeringId  Int      @map("offering_id")
+  studentCode String   @map("student_code") @db.VarChar(50)
+  enrolledAt  DateTime @default(now()) @map("enrolled_at")
+  status      String   @default("ENROLLED") @db.VarChar(20) // ENROLLED, DROPPED
+
+  offeringRef CourseOffering @relation(fields: [offeringId], references: [id], onDelete: Cascade)
+  studentRef  Student        @relation(fields: [studentCode], references: [studentCode])
+  scoreRef    Score?
+
+  @@unique([offeringId, studentCode], name: "unique_offering_student")
+  @@map("enrollments")
+}
+
+model Score {
+  id               Int      @id @default(autoincrement())
+  enrollmentId     Int?     @unique @map("enrollment_id")
+  studentId        String   @map("student_id") @db.VarChar(50) // studentCode e.g. "B23DCAT211"
+  courseCode       String   @map("course_code") @db.VarChar(50)
+  offeringCode     String?  @map("offering_code") @db.VarChar(50)
+  semester         String   @db.VarChar(50)
+  attendanceScore  Decimal? @map("attendance_score") @db.Decimal(4, 2) // Chuyên cần (10%)
+  midtermScore     Decimal? @map("midterm_score") @db.Decimal(4, 2) // Giữa kỳ (20%)
+  finalScore       Decimal? @map("final_score") @db.Decimal(4, 2) // Cuối kỳ (70%)
+  score            String   @db.VarChar(10) // e.g. "8.50" (Chuỗi băm chuẩn hóa)
+  letterScore      String?  @map("letter_score") @db.VarChar(5) // e.g. "A", "B+"
+  version          Int      @default(1)
+  status           String   @default("ACTIVE") @db.VarChar(20) // ACTIVE, DELETED
+  recordKey        String   @map("record_key") @db.VarChar(66)
+  dataHash         String   @map("data_hash") @db.VarChar(66)
+  blockchainStatus String   @default("PENDING") @map("blockchain_status") @db.VarChar(20) // CONFIRMED, PENDING, FAILED
+  latestTxHash     String?  @map("latest_tx_hash") @db.VarChar(66)
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  enrollmentRef   Enrollment?          @relation(fields: [enrollmentId], references: [id], onDelete: SetNull)
   versions        ScoreVersion[]
   integrityChecks IntegrityCheck[]
+  changeRequests  ScoreChangeRequest[]
 
   @@unique([studentId, courseCode, semester], name: "unique_student_course_semester")
   @@index([recordKey])
+  @@index([offeringCode])
   @@map("scores")
 }
 
@@ -45,14 +176,18 @@ model ScoreVersion {
   scoreId             Int       @map("score_id")
   version             Int
   score               String    @db.VarChar(10)
+  attendanceScore     Decimal?  @map("attendance_score") @db.Decimal(4, 2)
+  midtermScore        Decimal?  @map("midterm_score") @db.Decimal(4, 2)
+  finalScore          Decimal?  @map("final_score") @db.Decimal(4, 2)
   status              String    @db.VarChar(20)
-  action              String    @db.VarChar(20) // CREATE, UPDATE, DELETE
+  action              String    @db.VarChar(20) // CREATE, UPDATE, DELETE, RESTORE
   dataHash            String    @map("data_hash") @db.VarChar(66)
   actorHash           String    @map("actor_hash") @db.VarChar(66)
   transactionHash     String?   @map("transaction_hash") @db.VarChar(66)
   blockNumber         BigInt?   @map("block_number")
   blockchainTimestamp DateTime? @map("blockchain_timestamp")
   syncStatus          String    @default("PENDING") @map("sync_status") @db.VarChar(20) // CONFIRMED, PENDING, FAILED
+  changeRequestId     Int?      @map("change_request_id")
   createdAt           DateTime  @default(now()) @map("created_at")
 
   scoreRef Score @relation(fields: [scoreId], references: [id], onDelete: Cascade)
@@ -60,6 +195,69 @@ model ScoreVersion {
   @@unique([scoreId, version], name: "unique_score_version")
   @@index([scoreId])
   @@map("score_versions")
+}
+
+model ScoreChangeRequest {
+  id                 Int       @id @default(autoincrement())
+  scoreId            Int       @map("score_id")
+  offeringId         Int?      @map("offering_id")
+  studentCode        String    @map("student_code") @db.VarChar(50)
+  studentName        String    @map("student_name") @db.VarChar(100)
+  currentScore       String    @map("current_score") @db.VarChar(10)
+  proposedScore      String    @map("proposed_score") @db.VarChar(10)
+  proposedAttendance Decimal?  @map("proposed_attendance") @db.Decimal(4, 2)
+  proposedMidterm    Decimal?  @map("proposed_midterm") @db.Decimal(4, 2)
+  proposedFinal      Decimal?  @map("proposed_final") @db.Decimal(4, 2)
+  reason             String    @db.Text // Lý do điều chỉnh
+  evidenceAttachment String?   @map("evidence_attachment") @db.VarChar(255)
+  requestedBy        String    @map("requested_by") @db.VarChar(100) // Giảng viên username
+  requestedAt        DateTime  @default(now()) @map("requested_at")
+  status             String    @default("PENDING") @db.VarChar(20) // PENDING, APPROVED, REJECTED
+  reviewedBy         String?   @map("reviewed_by") @db.VarChar(100) // Admin username
+  reviewedAt         DateTime? @map("reviewed_at")
+  reviewNote         String?   @map("review_note") @db.Text
+
+  scoreRef    Score           @relation(fields: [scoreId], references: [id], onDelete: Cascade)
+  offeringRef CourseOffering? @relation(fields: [offeringId], references: [id], onDelete: SetNull)
+
+  @@index([scoreId])
+  @@index([offeringId])
+  @@index([status])
+  @@map("score_change_requests")
+}
+
+model BlockchainOperation {
+  id              Int      @id @default(autoincrement())
+  operationType   String   @map("operation_type") @db.VarChar(50) // APPEND_EVIDENCE
+  recordKey       String   @map("record_key") @db.VarChar(66)
+  expectedVersion Int      @map("expected_version")
+  dataHash        String   @map("data_hash") @db.VarChar(66)
+  actorHash       String   @map("actor_hash") @db.VarChar(66)
+  action          String   @db.VarChar(20) // CREATE, UPDATE, DELETE, RESTORE
+  status          String   @default("PENDING") @db.VarChar(30) // PENDING, BLOCKCHAIN_CONFIRMED, COMPLETED, FAILED
+  transactionHash String?  @map("transaction_hash") @db.VarChar(66)
+  blockNumber     BigInt?  @map("block_number")
+  retryCount      Int      @default(0) @map("retry_count")
+  error           String?  @db.Text
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@index([recordKey])
+  @@index([status])
+  @@map("blockchain_operations")
+}
+
+model Notification {
+  id         Int      @id @default(autoincrement())
+  title      String   @db.VarChar(255)
+  content    String   @db.Text
+  sender     String   @default("Ban Quản trị") @db.VarChar(100)
+  targetRole String   @default("ALL") @map("target_role") @db.VarChar(50) // ALL, STUDENT, LECTURER
+  isUrgent   Boolean  @default(false) @map("is_urgent")
+  isRead     Boolean  @default(false) @map("is_read")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@map("notifications")
 }
 
 model AuditLog {
@@ -77,17 +275,20 @@ model AuditLog {
 
 model IntegrityCheck {
   id                Int      @id @default(autoincrement())
-  scoreId           Int      @map("score_id")
-  databaseHash      String   @map("database_hash") @db.VarChar(66)
+  scoreId           Int?     @map("score_id")
+  recordKey         String?  @map("record_key") @db.VarChar(66)
+  databaseHash      String?  @map("database_hash") @db.VarChar(66)
   blockchainHash    String?  @map("blockchain_hash") @db.VarChar(66)
-  databaseVersion   Int      @map("database_version")
+  databaseVersion   Int?     @map("database_version")
   blockchainVersion Int?     @map("blockchain_version")
   result            String   @db.VarChar(20) // VALID, INVALID, PENDING, ERROR
+  reason            String?  @db.VarChar(50) // HASH_MISMATCH, VERSION_MISMATCH, MISSING_ON_CHAIN, MISSING_IN_DATABASE, ACTION_MISMATCH
   details           String   @db.Text
   checkedAt         DateTime @default(now()) @map("checked_at")
 
-  scoreRef Score @relation(fields: [scoreId], references: [id], onDelete: Cascade)
+  scoreRef Score? @relation(fields: [scoreId], references: [id], onDelete: SetNull)
 
   @@index([scoreId])
+  @@index([recordKey])
   @@map("integrity_checks")
 }

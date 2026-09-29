@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../api";
-import type { IntegrityCheckDetail } from "../types";
+import type { IntegrityCheckDetail, MissingRecordItem } from "../types";
 
 export const IntegrityCheckView: React.FC = () => {
   const [running, setRunning] = useState(false);
   const [results, setResults] = useState<IntegrityCheckDetail[]>([]);
+  const [missingRecords, setMissingRecords] = useState<MissingRecordItem[]>([]);
   const [summary, setSummary] = useState<{
     total: number;
     valid: number;
@@ -42,64 +43,124 @@ export const IntegrityCheckView: React.FC = () => {
         error: res.error,
       });
       setResults(res.results);
+      setMissingRecords(res.missingInDb || []);
       await loadHistory();
     } catch (err: any) {
-      alert(`Lỗi: ${err.message}`);
+      alert(`Lỗi kiểm tra toàn vẹn: ${err.message}`);
     } finally {
       setRunning(false);
     }
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1.75rem" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
       {/* Top Banner */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
-        <div>
-          <h1 style={{ fontSize: "1.5rem", fontWeight: 800 }}>Trung Tâm Kiểm Tra Toàn Vẹn CSDL</h1>
-          <p style={{ color: "#94a3b8", fontSize: "0.85rem" }}>
-            Đối soát toàn bộ dữ liệu MySQL bằng cách tính lại SHA-256 độc lập và so sánh với Evidence trên Smart Contract
-          </p>
+      <div className="ptit-card">
+        <div className="ptit-card-header">
+          <div>
+            <div className="ptit-card-title">
+              <span>🔍</span>
+              <span>TRUNG TÂM KIỂM ĐỊNH TOÀN VẸN CƠ SỞ DỮ LIỆU & BLOCKCHAIN</span>
+            </div>
+            <div style={{ color: "#64748b", fontSize: "0.82rem", marginTop: "0.25rem" }}>
+              Cơ chế kiểm định đa tầng: Tính lại băm SHA-256 động từ MySQL • So khớp với Evidence trên Smart Contract • Quét ngược tìm bản ghi bị xóa vật lý
+            </div>
+          </div>
+
+          <button
+            className="btn btn-primary"
+            style={{ padding: "0.6rem 1.25rem", fontSize: "0.9rem" }}
+            onClick={handleRunCheckAll}
+            disabled={running}
+          >
+            {running ? "⏳ Đang quét toàn diện..." : "🚀 Chạy Kiểm Tra Toàn Bộ CSDL"}
+          </button>
         </div>
 
-        <button
-          className="btn btn-primary"
-          style={{ padding: "0.75rem 1.5rem", fontSize: "0.95rem" }}
-          onClick={handleRunCheckAll}
-          disabled={running}
-        >
-          {running ? "⏳ Đang quét đối soát..." : "🚀 Chạy Kiểm Tra Toàn Bộ CSDL"}
-        </button>
+        {/* Summary Card */}
+        {summary && (
+          <div
+            style={{
+              background: summary.invalid > 0 || missingRecords.length > 0 ? "var(--invalid-bg)" : "var(--valid-bg)",
+              border: `1px solid ${summary.invalid > 0 || missingRecords.length > 0 ? "var(--invalid-border)" : "var(--valid-border)"}`,
+              borderRadius: "8px",
+              padding: "1rem",
+              marginTop: "0.5rem",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.75rem" }}>
+              <div>
+                <h3 style={{ fontSize: "1.05rem", fontWeight: 800, color: summary.invalid > 0 || missingRecords.length > 0 ? "var(--invalid)" : "var(--valid)" }}>
+                  {summary.invalid > 0 || missingRecords.length > 0
+                    ? "🚨 PHÁT HIỆN DỮ LIỆU BỊ XÂM PHẠM HOẶC KHÔNG KHỚP VỚI BLOCKCHAIN!"
+                    : "✨ TOÀN VẸN 100%: TẤT CẢ DỮ LIỆU ĐỀU KHỚP VỚI BẰNG CHỨNG ON-CHAIN"}
+                </h3>
+                <div style={{ fontSize: "0.82rem", color: "#334155", marginTop: "0.2rem" }}>
+                  Tổng số bản ghi: <strong>{summary.total}</strong> | Hợp lệ: <strong style={{ color: "var(--valid)" }}>{summary.valid}</strong> | Bị sửa đổi/Lỗi: <strong style={{ color: "var(--invalid)" }}>{summary.invalid}</strong> | Bị xóa vật lý trong MySQL: <strong style={{ color: "var(--invalid)" }}>{missingRecords.length}</strong>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: "0.4rem" }}>
+                <span className="badge badge-valid">VALID: {summary.valid}</span>
+                <span className="badge badge-invalid">INVALID: {summary.invalid}</span>
+                {missingRecords.length > 0 && (
+                  <span className="badge badge-invalid">MISSING IN DB: {missingRecords.length}</span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Summary Box if run */}
-      {summary && (
-        <div className="card" style={{ background: summary.invalid > 0 ? "rgba(239, 68, 68, 0.08)" : "rgba(16, 185, 129, 0.08)", border: `1px solid ${summary.invalid > 0 ? "#ef4444" : "#10b981"}` }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
-            <div>
-              <h3 style={{ fontSize: "1.15rem", fontWeight: 800, color: summary.invalid > 0 ? "#f87171" : "#34d399" }}>
-                {summary.invalid > 0 ? "🚨 PHÁT HIỆN DỮ LIỆU BỊ CAN THIỆP GIẢ MẠO!" : "✨ TẤT CẢ DỮ LIỆU ĐỀU TOÀN VẸN VÀ KHỚP 100% VỚI BLOCKCHAIN"}
-              </h3>
-              <p style={{ fontSize: "0.85rem", color: "#cbd5e1", marginTop: "0.25rem" }}>
-                Tổng số bản ghi: <strong>{summary.total}</strong> | Hợp lệ: <strong style={{ color: "#34d399" }}>{summary.valid}</strong> | Giả mạo: <strong style={{ color: "#f87171" }}>{summary.invalid}</strong> | Chờ: <strong style={{ color: "#fbbf24" }}>{summary.pending}</strong>
-              </p>
-            </div>
+      {/* Missing In Database Alert (Reverse Scan Result) */}
+      {missingRecords.length > 0 && (
+        <div className="ptit-card" style={{ borderLeft: "5px solid var(--invalid)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--invalid)", fontWeight: 700, marginBottom: "0.5rem" }}>
+            <span>⚠️</span>
+            <span>PHÁT HIỆN BẢN GHI ĐÃ TỒN TẠI TRÊN BLOCKCHAIN NHƯNG BỊ XÓA MẤT KHỎI MYSQL (PHYSICAL DELETION)</span>
+          </div>
+          <p style={{ fontSize: "0.82rem", color: "#475569", marginBottom: "0.75rem" }}>
+            Kẻ tấn công có quyền root DB đã xóa trực tiếp hàng trong bảng <code>scores</code>. Cơ chế đối soát ngược từ hàm <code>getAllRecordKeys()</code> của Smart Contract đã phát hiện:
+          </p>
 
-            <div style={{ display: "flex", gap: "0.5rem" }}>
-              <span className="badge badge-valid">VALID: {summary.valid}</span>
-              <span className="badge badge-invalid">INVALID: {summary.invalid}</span>
-            </div>
+          <div className="ptit-table-container">
+            <table className="ptit-table">
+              <thead>
+                <tr>
+                  <th>Record Key trên Blockchain</th>
+                  <th>Phiên bản on-chain</th>
+                  <th>Hash trên Blockchain</th>
+                  <th>Hành động cuối</th>
+                  <th>Chẩn đoán</th>
+                </tr>
+              </thead>
+              <tbody>
+                {missingRecords.map((m, i) => (
+                  <tr key={i}>
+                    <td className="mono" style={{ fontSize: "0.75rem" }}>{m.recordKey}</td>
+                    <td style={{ textAlign: "center", fontWeight: 700 }}>Version {m.blockchainVersion}</td>
+                    <td className="mono" style={{ fontSize: "0.75rem", color: "var(--invalid)" }}>{m.blockchainHash}</td>
+                    <td><span className="badge badge-pending">{m.blockchainAction}</span></td>
+                    <td style={{ color: "var(--invalid)", fontWeight: 600, fontSize: "0.8rem" }}>{m.error}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
 
-      {/* Fresh Run Results */}
+      {/* Fresh Run Detailed Results */}
       {results.length > 0 && (
-        <div className="card">
-          <h3 style={{ fontSize: "1.05rem", fontWeight: 700, marginBottom: "1rem" }}>
-            📋 Kết Quả Đối Soát Mới Nhất ({results.length} bản ghi)
-          </h3>
+        <div className="ptit-card">
+          <div className="ptit-card-header">
+            <div className="ptit-card-title">
+              <span>📋</span>
+              <span>KẾT QUẢ ĐỐI SOÁT CHI TIẾT THEO TỪNG BẢN GHI ({results.length} bản ghi)</span>
+            </div>
+          </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
             {results.map((r) => {
               const isOk = r.result === "VALID";
 
@@ -107,44 +168,66 @@ export const IntegrityCheckView: React.FC = () => {
                 <div
                   key={r.scoreId}
                   style={{
-                    background: "#1e293b",
-                    border: "1px solid #334155",
-                    borderLeft: `5px solid ${isOk ? "#10b981" : "#ef4444"}`,
+                    background: "#ffffff",
+                    border: "1px solid var(--border-light)",
+                    borderLeft: `5px solid ${isOk ? "var(--valid)" : "var(--invalid)"}`,
                     borderRadius: "8px",
                     padding: "1rem",
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}>
                     <div>
-                      <strong style={{ fontSize: "1rem", color: "#f8fafc" }}>
+                      <strong style={{ fontSize: "0.95rem", color: "var(--primary-ptit)" }}>
                         {r.studentId}
                       </strong>{" "}
-                      — Môn: <strong>{r.courseCode}</strong> | Học kỳ: <strong>{r.semester}</strong> | Điểm CSDL: <strong style={{ color: "#38bdf8" }}>{r.databaseScore}</strong> (v{r.databaseVersion})
+                      — Môn: <strong>{r.courseCode}</strong> | Kỳ: <strong>{r.semester}</strong> | Điểm CSDL: <strong>{r.databaseScore}</strong> (Version {r.databaseVersion})
                     </div>
                     <span className={`badge ${isOk ? "badge-valid" : "badge-invalid"}`}>
                       {r.result} {r.reason ? `(${r.reason})` : ""}
                     </span>
                   </div>
 
-                  <div style={{ fontSize: "0.85rem", color: isOk ? "#a7f3d0" : "#fca5a5", marginTop: "0.4rem" }}>
+                  <div style={{ fontSize: "0.82rem", color: isOk ? "#065f46" : "#991b1b", marginTop: "0.35rem", fontWeight: 500 }}>
                     {r.message}
                   </div>
 
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem", marginTop: "0.75rem", fontSize: "0.75rem" }}>
-                    <div style={{ background: "#0f172a", padding: "0.5rem", borderRadius: "6px", border: "1px solid #334155" }}>
-                      <span style={{ color: "#94a3b8" }}>Database Hash (Tính từ MySQL):</span>
-                      <div className="mono" style={{ color: "#e2e8f0", wordBreak: "break-all", marginTop: "0.15rem" }}>
+                  {/* Hash Comparison Box */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.6rem", marginTop: "0.65rem", fontSize: "0.75rem" }}>
+                    <div style={{ background: "#f8fafc", padding: "0.5rem 0.65rem", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                      <span style={{ color: "#64748b", fontWeight: 600 }}>Database Hash (Tính lại từ các cột trong MySQL):</span>
+                      <div className="mono" style={{ color: "#1e293b", wordBreak: "break-all", marginTop: "0.15rem" }}>
                         {r.databaseHash}
                       </div>
                     </div>
 
-                    <div style={{ background: "#0f172a", padding: "0.5rem", borderRadius: "6px", border: "1px solid #334155" }}>
-                      <span style={{ color: "#94a3b8" }}>Blockchain Hash (Lấy từ Evidence):</span>
-                      <div className="mono" style={{ color: isOk ? "#34d399" : "#f87171", wordBreak: "break-all", marginTop: "0.15rem" }}>
-                        {r.blockchainHash || "Không có bằng chứng trên chain"}
+                    <div style={{ background: "#f8fafc", padding: "0.5rem 0.65rem", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                      <span style={{ color: "#64748b", fontWeight: 600 }}>Blockchain Hash (Lấy từ Smart Contract):</span>
+                      <div className="mono" style={{ color: isOk ? "var(--valid)" : "var(--invalid)", wordBreak: "break-all", marginTop: "0.15rem", fontWeight: 700 }}>
+                        {r.blockchainHash || "Chưa có bằng chứng trên Blockchain"}
                       </div>
                     </div>
                   </div>
+
+                  {/* History Checks Chain */}
+                  {r.historyChecks && r.historyChecks.length > 0 && (
+                    <div style={{ marginTop: "0.65rem", paddingTop: "0.65rem", borderTop: "1px dashed #e2e8f0", fontSize: "0.78rem" }}>
+                      <div style={{ fontWeight: 600, color: "#475569", marginBottom: "0.3rem" }}>
+                        Chuỗi xác thực các phiên bản lịch sử (Level 2 Deep Check):
+                      </div>
+                      <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
+                        {r.historyChecks.map((h) => (
+                          <span
+                            key={h.version}
+                            className={`badge ${h.matches ? "badge-valid" : "badge-invalid"}`}
+                            style={{ fontSize: "0.72rem" }}
+                            title={`DB Hash: ${h.databaseHash}\nChain Hash: ${h.blockchainHash || "N/A"}`}
+                          >
+                            v{h.version}: {h.matches ? "KHỚP" : "GIẢ MẠO"} ({h.databaseAction})
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -153,51 +236,56 @@ export const IntegrityCheckView: React.FC = () => {
       )}
 
       {/* History of Previous Checks */}
-      <div className="card">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-          <h3 style={{ fontSize: "1rem", fontWeight: 700 }}>
-            🕒 Lịch Sử Các Lần Kiểm Tra Trước (Bảng integrity_checks)
-          </h3>
+      <div className="ptit-card">
+        <div className="ptit-card-header">
+          <div className="ptit-card-title">
+            <span>🕒</span>
+            <span>NHẬT KÝ ĐỐI SOÁT CƠ SỞ DỮ LIỆU (BẢNG INTEGRITY_CHECKS)</span>
+          </div>
           <button className="btn btn-outline btn-sm" onClick={loadHistory}>
-            Làm mới lịch sử
+            Làm mới nhật ký
           </button>
         </div>
 
         {loadingHistory ? (
-          <div style={{ textAlign: "center", padding: "1.5rem", color: "#94a3b8" }}>Đang tải lịch sử...</div>
+          <div style={{ textAlign: "center", padding: "2rem", color: "#64748b" }}>Đang tải nhật ký...</div>
         ) : recentChecks.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "1.5rem", color: "#94a3b8" }}>Chưa có lần kiểm tra nào được ghi nhận. Hãy bấm nút chạy kiểm tra ở trên.</div>
+          <div style={{ textAlign: "center", padding: "2rem", color: "#9ca3af", fontStyle: "italic" }}>
+            Chưa có lần kiểm tra nào được lưu trữ.
+          </div>
         ) : (
-          <div className="table-container">
-            <table>
+          <div className="ptit-table-container">
+            <table className="ptit-table">
               <thead>
                 <tr>
-                  <th>Thời Gian</th>
-                  <th>Sinh Viên</th>
-                  <th>Môn Học</th>
+                  <th>Thời gian kiểm</th>
+                  <th>Sinh viên</th>
+                  <th>Môn học</th>
                   <th>Điểm</th>
                   <th>Hash CSDL</th>
                   <th>Hash Blockchain</th>
-                  <th>Kết Quả</th>
+                  <th style={{ textAlign: "center" }}>Kết quả</th>
                 </tr>
               </thead>
               <tbody>
                 {recentChecks.map((c) => (
                   <tr key={c.id}>
-                    <td style={{ fontSize: "0.75rem", color: "#94a3b8" }}>
-                      {new Date(c.checkedAt).toLocaleString()}
+                    <td style={{ fontSize: "0.78rem", color: "#64748b" }}>
+                      {new Date(c.checkedAt).toLocaleString("vi-VN")}
                     </td>
                     <td><strong>{c.studentId}</strong></td>
                     <td>{c.courseCode}</td>
-                    <td><strong>{c.score}</strong></td>
-                    <td className="mono" style={{ fontSize: "0.7rem", color: "#94a3b8" }}>
-                      {c.databaseHash ? `${c.databaseHash.slice(0, 10)}...` : "N/A"}
+                    <td><strong style={{ color: "var(--primary-ptit)" }}>{c.score}</strong></td>
+                    <td className="mono" style={{ fontSize: "0.72rem", color: "#64748b" }}>
+                      {c.databaseHash ? `${c.databaseHash.slice(0, 12)}...` : "N/A"}
                     </td>
-                    <td className="mono" style={{ fontSize: "0.7rem", color: c.result === "VALID" ? "#34d399" : "#f87171" }}>
-                      {c.blockchainHash ? `${c.blockchainHash.slice(0, 10)}...` : "N/A"}
+                    <td className="mono" style={{ fontSize: "0.72rem", color: c.result === "VALID" ? "var(--valid)" : "var(--invalid)" }}>
+                      {c.blockchainHash ? `${c.blockchainHash.slice(0, 12)}...` : "N/A"}
                     </td>
-                    <td>
-                      <span className={`badge ${c.result === "VALID" ? "badge-valid" : c.result === "INVALID" ? "badge-invalid" : "badge-pending"}`} style={{ fontSize: "0.65rem" }}>
+                    <td style={{ textAlign: "center" }}>
+                      <span
+                        className={`badge ${c.result === "VALID" ? "badge-valid" : "badge-invalid"}`}
+                      >
                         {c.result}
                       </span>
                     </td>

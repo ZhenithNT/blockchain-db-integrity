@@ -198,5 +198,70 @@ describe("Backend API & Integrity Verification Integration", () => {
       assert.equal(checkResult.result, "VALID");
       assert.equal(checkResult.blockchainAction, "DELETE");
     });
+
+    it("should restore deleted score as version 4 with action RESTORE", async () => {
+      const restoreResult = await restoreScore(createdScoreId, "admin");
+
+      assert.equal(restoreResult.score.status, "ACTIVE");
+      assert.equal(restoreResult.score.version, 4);
+
+      const checkResult = await checkScoreIntegrity(createdScoreId);
+      assert.equal(checkResult.result, "VALID");
+      assert.equal(checkResult.blockchainAction, "RESTORE");
+      assert.equal(checkResult.databaseVersion, 4);
+    });
+
+    it("should handle score change request workflow on approved classes", async () => {
+      // Giảng viên gửi yêu cầu sửa điểm
+      const lecturerRes = await fetch(`${baseUrl}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: "lecturer", password: "Lecturer@123" }),
+      });
+      const { token: lecturerToken } = await lecturerRes.json();
+
+      const reqRes = await fetch(`${baseUrl}/api/change-requests`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${lecturerToken}`,
+        },
+        body: JSON.stringify({
+          scoreId: createdScoreId,
+          proposedScore: 9.5,
+          reason: "Chấm sót câu 4 phần thi cuối kỳ",
+        }),
+      });
+      assert.equal(reqRes.status, 201);
+      const reqData = await reqRes.json();
+      assert.equal(reqData.status, "PENDING");
+
+      // Admin duyệt yêu cầu -> tự động tạo version 5 trên Blockchain
+      const adminRes = await fetch(`${baseUrl}/api/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: "admin", password: "Admin@123" }),
+      });
+      const { token: adminToken } = await adminRes.json();
+
+      const reviewRes = await fetch(`${baseUrl}/api/change-requests/${reqData.id}/review`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${adminToken}`,
+        },
+        body: JSON.stringify({
+          status: "APPROVED",
+          reviewNote: "Đã kiểm tra bài thi gốc và đồng ý điều chỉnh",
+        }),
+      });
+      assert.equal(reviewRes.status, 200);
+
+      // Kiểm tra điểm đã được cập nhật lên 9.50 (Version 5) và khớp trên Blockchain
+      const checkResult = await checkScoreIntegrity(createdScoreId);
+      assert.equal(checkResult.result, "VALID");
+      assert.equal(checkResult.databaseVersion, 5);
+      assert.equal(checkResult.databaseScore, "9.50");
+    });
   });
 });

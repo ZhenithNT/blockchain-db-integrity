@@ -209,3 +209,9 @@ export async function recordExistsOnChain(recordKey: Hex): Promise<boolean> {
   const contract = await getContractInstance();
   return await contract.read.exists([recordKey]);
 }
+
+export async function getAllRecordKeysFromChain(): Promise<Hex[]> {
+  const contract = await getContractInstance();
+  const keys = await contract.read.getAllRecordKeys();
+  return keys as Hex[];
+}

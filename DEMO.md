@@ -62,12 +62,11 @@ npm.cmd run blockchain:node
 # 1. Deploy hợp đồng thông minh lên Blockchain local
 npm.cmd run blockchain:deploy
 
-# 2. Khởi tạo cấu trúc bảng MySQL
-npm.cmd run db:migrate
-
-# 3. Nạp dữ liệu mẫu ban đầu
-npm.cmd run db:seed
+# 2. Khởi tạo cấu trúc bảng MySQL, không nạp dữ liệu mẫu
+npm.cmd run db:init
 ```
+
+Với CSDL mới, lệnh trên chỉ tạo các bảng trống, bao gồm bảng tài khoản. Các tài khoản và bản ghi minh họa trong kịch bản bên dưới cần được chuẩn bị riêng trước buổi demo; chúng không tự xuất hiện khi khởi tạo CSDL. Lệnh `db:seed` chỉ dành cho việc chủ động nạp mẫu, không cần chạy khi muốn giữ bảng trống. Khởi tạo cấu trúc không xóa dữ liệu đã có.
 
 ### Cửa sổ 3: Khởi động Ứng dụng Full-stack
 ```powershell

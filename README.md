@@ -198,14 +198,15 @@ Mở các cửa sổ **Windows PowerShell** độc lập theo thứ tự:
 C:\xampp\mysql_start.bat
 ```
 
-### Bước 2: Đồng bộ CSDL và Seed dữ liệu mẫu
+### Bước 2: Khởi tạo cấu trúc CSDL (không thêm dữ liệu mẫu)
 ```powershell
-# Chạy migration tạo các bảng trong MySQL
-npm.cmd run db:migrate
-
-# Khởi tạo tài khoản (admin, lecturer, auditor) và điểm mẫu SV001
-npm.cmd run db:seed
+# Tạo các bảng theo prisma/schema.prisma
+npm.cmd run db:init
 ```
+
+Với cơ sở dữ liệu mới, tất cả bảng đều trống, kể cả bảng tài khoản. Lệnh này không nạp sinh viên, lớp học phần, điểm, thông báo hoặc ghi bằng chứng lên blockchain. Nếu CSDL đã có dữ liệu, lệnh không dùng để xóa trắng dữ liệu đó; không chấp nhận yêu cầu mất dữ liệu khi đồng bộ cấu trúc nếu chưa có bản sao lưu.
+
+`db:migrate` vẫn là tên lệnh tương đương để đồng bộ cấu trúc. `db:seed` là thao tác nạp dữ liệu demo riêng, **không thuộc quy trình khởi tạo bảng trống**. Không chạy lệnh seed nếu muốn tự nhập dữ liệu. Các tài khoản demo bên dưới chỉ tồn tại khi đã nạp mẫu; CSDL trống cần được cấp tài khoản trước khi đăng nhập.
 
 ### Bước 3: Khởi động Blockchain Local Node
 Mở **Terminal 1**:

@@ -83,6 +83,13 @@ export const IntegrityRegistryABI = [
   },
   {
     type: "function",
+    name: "getAllRecordKeys",
+    inputs: [],
+    outputs: [{ name: "", type: "bytes32[]" }],
+    stateMutability: "view"
+  },
+  {
+    type: "function",
     name: "getRecordKeyAt",
     inputs: [{ name: "index", type: "uint256" }],
     outputs: [{ name: "", type: "bytes32" }],
