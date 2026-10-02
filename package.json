@@ -26,7 +26,8 @@
     "build": "tsc -p packages/shared/tsconfig.json && tsc -p apps/api/tsconfig.json && tsc -p apps/web/tsconfig.json && vite build apps/web",
     "demo:tamper": "tsx scripts/tamper-database.ts",
     "demo:restore": "tsx scripts/restore-database.ts",
-    "integrity:check": "tsx scripts/check-integrity.ts"
+    "integrity:check": "tsx scripts/check-integrity.ts",
+    "attack": "tsx scripts/attack-scenarios.ts"
   },
   "keywords": [],
   "author": "",

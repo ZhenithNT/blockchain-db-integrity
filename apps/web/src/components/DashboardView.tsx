@@ -137,21 +137,6 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </div>
 
-      {/* Demo Attack Callout Banner */}
-      <div className="card" style={{ background: "linear-gradient(135deg, #1e1b4b, #172554)", border: "1px solid #4338ca", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
-        <div>
-          <h3 style={{ fontSize: "1.1rem", fontWeight: 700, color: "#e0e7ff" }}>
-            ⚡ Bạn muốn trình diễn phát hiện tấn công giả mạo?
-          </h3>
-          <p style={{ fontSize: "0.85rem", color: "#a5b4fc", marginTop: "0.25rem" }}>
-            Mô phỏng hacker sửa trực tiếp điểm SV001 từ 8.50 lên 10.00 trong MySQL và xem hệ thống lập tức báo INVALID!
-          </p>
-        </div>
-        <button className="btn btn-warning" onClick={onNavigateToDemo}>
-          Mở Kịch Bản Demo Tấn Công →
-        </button>
-      </div>
-
       {/* Bottom Grid: Recent Transactions & Audit Logs */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
         {/* Recent Blockchain Transactions */}

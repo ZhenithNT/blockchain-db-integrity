@@ -118,22 +118,37 @@ Mở trình duyệt truy cập: **[http://localhost:3000](http://localhost:3000)
 
 ### Bước 4: Trình diễn Kịch bản Tấn công Giả mạo (Cao Trào Demo)
 - **Hành động:**
-  1. Chuyển sang tab **"⚡ Demo Tấn công"** (hoặc mở Terminal chạy `npm.cmd run demo:tamper`).
-  2. Chọn bản ghi: `SV001` (Điểm gốc đang là `8.50`).
-  3. Ô "Điểm số sửa lén thành": Nhập `10.00`.
-  4. Bấm nút màu đỏ: **"💥 Kích Hoạt Tấn Công (Sửa MySQL)"**.
-  5. Hệ thống hiển thị cảnh báo: *Dữ liệu đã bị sửa trực tiếp trong MySQL mà không thông qua Smart Contract*.
-  6. Ngay lập tức, màn hình đối soát bật lên **MÀU ĐỎ RỰC**:
+  1. Mở cửa sổ Terminal hacker hoặc phpMyAdmin (đóng vai DBA/Hacker can thiệp trực tiếp MySQL mà không qua Web):
+     ```powershell
+     npm run attack tamper-score B23DCAT111 10.00
+     ```
+     *(Hoặc chạy lệnh SQL: `UPDATE scores SET score = '10.00' WHERE studentId = 'B23DCAT111';`)*
+  2. Quay lại Web, vào menu **"🔍 Kiểm tra toàn vẹn CSDL"** $\rightarrow$ Bấm **"Chạy Kiểm Tra Toàn Bộ CSDL"**.
+  3. Ngay lập tức, màn hình đối soát bật lên **MÀU ĐỎ RỰC**:
      ```text
      KẾT QUẢ ĐỐI SOÁT: INVALID
      Lý do: HASH_MISMATCH
      Thông báo: Dữ liệu trong MySQL đã bị can thiệp trái phép! Hash tính từ CSDL không khớp với Evidence trên Blockchain.
      ```
-  7. Chỉ vào bảng so sánh:
-     - **Hash CSDL:** `0xe9f78...` (Tính lại từ `SV001|ATWEB|2026-1|10.00|1|ACTIVE`)
-     - **Hash Blockchain:** `0xeda2b...` (Bằng chứng lúc tạo điểm `8.50`)
+  4. Chỉ vào bảng so sánh:
+     - **Database Hash:** `0xe9f78...` (Tính lại từ điểm 10.00 trong MySQL)
+     - **Blockchain Hash:** `0xeda2b...` (Bằng chứng lúc tạo điểm 8.50 đã khóa cứng on-chain)
 - **Lời thoại gợi ý:**  
-  *"Đây là tình huống giả định một DBA biến chất hoặc tin tặc đột nhập vào MySQL và sửa điểm của sinh viên SV001 từ 8.50 thành 10.00. Nếu không có Blockchain, điểm 10.00 này sẽ được chấp nhận là thật. Tuy nhiên, khi Checker chạy, hệ thống tính lại SHA-256 từ MySQL và đối chiếu với Smart Contract. Vì kẻ tấn công không thể sửa được Blockchain, mã băm lập tức bị lệch và hệ thống gắn cờ INVALID: HASH_MISMATCH ngay lập tức!"*
+  *"Đây là tình huống giả định một DBA biến chất hoặc tin tặc đột nhập vào MySQL và sửa điểm từ 8.50 thành 10.00. Vì hành vi này can thiệp trực tiếp CSDL và không thông qua Smart Contract, kẻ tấn công không thể sửa được Blockchain. Khi đối soát, mã băm lập tức bị lệch và hệ thống gắn cờ INVALID: HASH_MISMATCH ngay lập tức!"*
+
+---
+
+### Bổ sung: Các lệnh tấn công mở rộng qua CLI (`npm run attack`)
+Hệ thống hỗ trợ sẵn các kịch bản tấn công trực tiếp ngoài web để kiểm chứng:
+* `npm run attack tamper-score <studentId> [score]` : Sửa trực tiếp điểm trong CSDL.
+* `npm run attack tamper-both <studentId> [score]` : Che giấu bằng cách tự sửa cả điểm và dataHash trong MySQL.
+* `npm run attack rollback-v1 <studentId>` : Đưa điểm hiện tại về phiên bản Version 1 cũ.
+* `npm run attack inject-fake <studentId> <courseCode> [score]` : Bơm bản ghi điểm giả vào MySQL.
+* `npm run attack delete-score <studentId>` : Xóa vật lý bản ghi điểm khỏi MySQL.
+* `npm run attack tamper-history <studentId> <version> [score]` : Sửa điểm của một phiên bản cũ trong lịch sử.
+* `npm run attack delete-history <studentId> <version>` : Xóa một phiên bản ở giữa trong lịch sử.
+* `npm run attack spoof-actor <studentId> <version> [actor]` : Mạo danh người thao tác chấm điểm.
+* `npm run attack clear-audit-log` : Xóa sạch nhật ký trong bảng `audit_logs`.
 
 ---
 

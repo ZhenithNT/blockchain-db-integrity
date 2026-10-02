@@ -156,14 +156,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ user, activeTab, onSelectTab }
               <span>🔍</span>
               <span>Kiểm tra toàn vẹn CSDL</span>
             </div>
-            <div
-              className={`sidebar-menu-item ${activeTab === "demo-attack" ? "active" : ""}`}
-              onClick={() => onSelectTab("demo-attack")}
-              style={{ color: "#b91c1c", fontWeight: 600 }}
-            >
-              <span>⚡</span>
-              <span>Phòng Lab Tấn công & Khôi phục</span>
-            </div>
           </>
         )}
 
@@ -197,14 +189,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ user, activeTab, onSelectTab }
             >
               <span>✍️</span>
               <span>Nhật ký yêu cầu điều chỉnh</span>
-            </div>
-            <div
-              className={`sidebar-menu-item ${activeTab === "demo-attack" ? "active" : ""}`}
-              onClick={() => onSelectTab("demo-attack")}
-              style={{ color: "#b91c1c", fontWeight: 600 }}
-            >
-              <span>⚡</span>
-              <span>Phòng Lab Tấn công & Khôi phục</span>
             </div>
           </>
         )}
