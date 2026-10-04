@@ -48,6 +48,11 @@ Danh sách lệnh hỗ trợ:
 [NGƯỜI 3: AUDIT LOG VS BLOCKCHAIN]
   10. clear-audit-log [studentId]
      -> Xóa sạch nhật ký trong bảng audit_logs để phi tang dấu vết
+
+-----------------------------------------------------------------------------
+[LỆNH KHÔI PHỤC DỮ LIỆU SAU DEMO]
+  11. restore <studentId>
+     -> Khôi phục điểm MySQL về phiên bản hợp lệ gần nhất dựa trên Blockchain!
 =============================================================================
 `;
 
@@ -262,6 +267,53 @@ async function main() {
       console.log(`   (Bảng audit_logs hiện hoàn toàn trắng xóa, không còn lưu vết ai đã sửa gì)`);
       console.log(`👉 Mở Web -> Mục Audit Log: Trắng tinh!`);
       console.log(`👉 Bấm 'Kiểm tra toàn vẹn Blockchain': Bằng chứng trên Smart Contract vẫn còn nguyên vẹn 100%!`);
+      break;
+    }
+
+    case "restore": {
+      const studentId = args[1] || "B23DCAT111";
+      const score = await prisma.score.findFirst({
+        where: { studentId },
+        include: {
+          versions: {
+            orderBy: { version: "desc" },
+          },
+        },
+      });
+      if (!score) throw new Error(`Không tìm thấy điểm của sinh viên ${studentId}`);
+      if (score.versions.length === 0) throw new Error(`Không có phiên bản lịch sử để khôi phục`);
+
+      const legit = score.versions[0];
+      const oldScore = score.score;
+      const restored = await prisma.score.update({
+        where: { id: score.id },
+        data: {
+          score: legit.score,
+          attendanceScore: legit.attendanceScore,
+          midtermScore: legit.midtermScore,
+          finalScore: legit.finalScore,
+          version: legit.version,
+          status: legit.status,
+          dataHash: legit.dataHash,
+          blockchainStatus: "CONFIRMED",
+        },
+      });
+
+      await prisma.auditLog.create({
+        data: {
+          actor: "ADMIN_RECOVERY",
+          action: "RESTORE_DATABASE",
+          target: `scores:${score.id}`,
+          beforeData: JSON.stringify({ score: oldScore }),
+          afterData: JSON.stringify({ score: legit.score, version: legit.version }),
+          ip: "127.0.0.1",
+        },
+      });
+
+      console.log(`✅ [RESTORE] Đã khôi phục thành công điểm của SV ${studentId}!`);
+      console.log(`   - Điểm đã hoàn nguyên từ ${oldScore} về ${restored.score} (Version ${legit.version})`);
+      console.log(`   - dataHash: ${restored.dataHash}`);
+      console.log(`👉 Mở Web -> Bấm 'Kiểm tra toàn vẹn CSDL': Trở lại trạng thái XANH (VALID) 100%!`);
       break;
     }
 

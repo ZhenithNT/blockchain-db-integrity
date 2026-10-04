@@ -31,6 +31,8 @@ export const IntegrityCheckView: React.FC = () => {
     loadHistory();
   }, []);
 
+  const [restoringId, setRestoringId] = useState<number | null>(null);
+
   const handleRunCheckAll = async () => {
     setRunning(true);
     try {
@@ -49,6 +51,22 @@ export const IntegrityCheckView: React.FC = () => {
       alert(`Lỗi kiểm tra toàn vẹn: ${err.message}`);
     } finally {
       setRunning(false);
+    }
+  };
+
+  const handleRestoreRecord = async (scoreId: number) => {
+    if (!window.confirm("Xác nhận khôi phục bản ghi này về trạng thái chuẩn từ Blockchain?")) {
+      return;
+    }
+    setRestoringId(scoreId);
+    try {
+      const res = await api.demoRestore(scoreId);
+      alert(`Khôi phục thành công! Điểm đã được hoàn nguyên về ${res.score.score} (Version ${res.restoredFromVersion})`);
+      await handleRunCheckAll();
+    } catch (err: any) {
+      alert(`Khôi phục thất bại: ${err.message}`);
+    } finally {
+      setRestoringId(null);
     }
   };
 
@@ -182,9 +200,30 @@ export const IntegrityCheckView: React.FC = () => {
                       </strong>{" "}
                       — Môn: <strong>{r.courseCode}</strong> | Kỳ: <strong>{r.semester}</strong> | Điểm CSDL: <strong>{r.databaseScore}</strong> (Version {r.databaseVersion})
                     </div>
-                    <span className={`badge ${isOk ? "badge-valid" : "badge-invalid"}`}>
-                      {r.result} {r.reason ? `(${r.reason})` : ""}
-                    </span>
+                    <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                      {!isOk && (
+                        <button
+                          className="btn btn-primary btn-sm"
+                          style={{
+                            fontSize: "0.78rem",
+                            padding: "0.28rem 0.75rem",
+                            background: "#059669",
+                            borderColor: "#059669",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.3rem",
+                          }}
+                          onClick={() => handleRestoreRecord(r.scoreId)}
+                          disabled={restoringId === r.scoreId}
+                          title="Tự động khôi phục dữ liệu từ phiên bản chuẩn được Blockchain xác thực"
+                        >
+                          {restoringId === r.scoreId ? "⏳ Đang khôi phục..." : "🔄 Khôi phục từ Blockchain"}
+                        </button>
+                      )}
+                      <span className={`badge ${isOk ? "badge-valid" : "badge-invalid"}`}>
+                        {r.result} {r.reason ? `(${r.reason})` : ""}
+                      </span>
+                    </div>
                   </div>
 
                   <div style={{ fontSize: "0.82rem", color: isOk ? "#065f46" : "#991b1b", marginTop: "0.35rem", fontWeight: 500 }}>
