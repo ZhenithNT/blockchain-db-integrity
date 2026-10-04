@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { api } from "../api";
 import type { IntegrityCheckDetail, StudentScoreRow } from "../types";
 
@@ -32,6 +32,12 @@ export const EvidenceModal: React.FC<EvidenceModalProps> = ({
       setChecking(false);
     }
   };
+
+  useEffect(() => {
+    if (score.scoreId) {
+      handleRunVerify();
+    }
+  }, [score.scoreId]);
 
   return (
     <div className="modal-overlay" onClick={onClose}>

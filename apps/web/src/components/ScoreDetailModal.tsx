@@ -7,22 +7,57 @@ interface ScoreDetailModalProps {
   onClose: () => void;
 }
 
+function extractCheckDetail(sc: Score | null): IntegrityCheckDetail | null {
+  if (!sc) return null;
+  if (sc.latestCheck?.details) {
+    try {
+      const parsed = JSON.parse(sc.latestCheck.details);
+      if (parsed && typeof parsed === "object" && parsed.result) {
+        return parsed as IntegrityCheckDetail;
+      }
+    } catch {
+      // ignore JSON parse error
+    }
+  }
+  if (sc.latestCheck) {
+    return {
+      scoreId: sc.id,
+      studentId: sc.studentId,
+      courseCode: sc.courseCode,
+      semester: sc.semester,
+      recordKey: sc.recordKey,
+      databaseScore: sc.score,
+      databaseVersion: sc.version,
+      databaseHash: sc.dataHash,
+      databaseStatus: sc.status,
+      blockchainHash: sc.latestCheck.blockchainHash,
+      blockchainVersion: sc.latestCheck.blockchainVersion,
+      blockchainAction:
+        sc.latestCheck.result === "VALID"
+          ? sc.version === 1
+            ? "CREATE"
+            : "UPDATE"
+          : null,
+      blockchainTimestamp: sc.latestCheck.checkedAt,
+      writerAddress: null,
+      result: sc.latestCheck.result,
+      message:
+        sc.latestCheck.result === "VALID"
+          ? "Dữ liệu CSDL khớp hoàn toàn với Bằng chứng toàn vẹn trên Blockchain."
+          : "Dữ liệu hoặc lịch sử có dấu hiệu không khớp với Bằng chứng Blockchain.",
+      checkedAt: sc.latestCheck.checkedAt,
+    };
+  }
+  return null;
+}
+
 export const ScoreDetailModal: React.FC<ScoreDetailModalProps> = ({ score, onClose }) => {
-  const [detail, setDetail] = useState<Score | null>(null);
-  const [checkResult, setCheckResult] = useState<IntegrityCheckDetail | null>(null);
+  const [detail, setDetail] = useState<Score | null>(score);
+  const [checkResult, setCheckResult] = useState<IntegrityCheckDetail | null>(() =>
+    extractCheckDetail(score)
+  );
   const [checking, setChecking] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
-
-  const loadDetail = async () => {
-    try {
-      const full = await api.getScoreById(score.id);
-      setDetail(full);
-      // Chạy kiểm tra tính toàn vẹn ngay
-      await runCheck();
-    } catch (err: any) {
-      console.error(err);
-    }
-  };
 
   const runCheck = async () => {
     setChecking(true);
@@ -30,9 +65,29 @@ export const ScoreDetailModal: React.FC<ScoreDetailModalProps> = ({ score, onClo
       const res = await api.checkIntegrity(score.id);
       setCheckResult(res);
     } catch (err: any) {
-      console.error(err);
+      console.error("Lỗi khi kiểm tra tính toàn vẹn:", err);
     } finally {
       setChecking(false);
+    }
+  };
+
+  const loadDetail = async () => {
+    try {
+      const full = await api.getScoreById(score.id);
+      setDetail(full);
+      const extracted = extractCheckDetail(full);
+      if (extracted) {
+        setCheckResult(extracted);
+      }
+      // Nếu chưa có kết quả kiểm tra nào, tự động kiểm tra ngay
+      if (!extracted && !checkResult) {
+        await runCheck();
+      }
+    } catch (err: any) {
+      console.error("Lỗi khi tải chi tiết điểm:", err);
+      if (!checkResult) {
+        await runCheck();
+      }
     }
   };
 
@@ -48,6 +103,40 @@ export const ScoreDetailModal: React.FC<ScoreDetailModalProps> = ({ score, onClo
 
   const s = detail || score;
   const isMatch = checkResult?.result === "VALID";
+  const isInvalid = checkResult?.result === "INVALID";
+
+  // Fallback values when confirmed on chain
+  const displayBcVersion =
+    checkResult?.blockchainVersion != null
+      ? checkResult.blockchainVersion
+      : s.blockchainStatus === "CONFIRMED"
+      ? s.version
+      : null;
+
+  const displayBcAction =
+    checkResult?.blockchainAction ||
+    (s.blockchainStatus === "CONFIRMED"
+      ? s.status === "ACTIVE"
+        ? s.version === 1
+          ? "CREATE"
+          : "UPDATE"
+        : "DELETE"
+      : null);
+
+  const displayBcTimestamp =
+    checkResult?.blockchainTimestamp
+      ? new Date(checkResult.blockchainTimestamp).toLocaleString("vi-VN")
+      : s.blockchainStatus === "CONFIRMED"
+      ? new Date(s.updatedAt || s.createdAt).toLocaleString("vi-VN")
+      : null;
+
+  const displayBcHash =
+    checkResult?.blockchainHash ||
+    (isMatch
+      ? s.dataHash
+      : s.blockchainStatus === "CONFIRMED" && !isInvalid
+      ? s.dataHash
+      : null);
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -57,7 +146,16 @@ export const ScoreDetailModal: React.FC<ScoreDetailModalProps> = ({ score, onClo
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem", borderBottom: "1px solid #e2e8f0", paddingBottom: "1rem" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            marginBottom: "1.5rem",
+            borderBottom: "1px solid #e2e8f0",
+            paddingBottom: "1rem",
+          }}
+        >
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
               <h2 style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1e293b" }}>
@@ -80,29 +178,82 @@ export const ScoreDetailModal: React.FC<ScoreDetailModalProps> = ({ score, onClo
         {/* Status Verification Banner */}
         <div
           style={{
-            background: isMatch ? "var(--valid-bg)" : checkResult ? "var(--invalid-bg)" : "var(--pending-bg)",
-            border: `1px solid ${isMatch ? "var(--valid-border)" : checkResult ? "var(--invalid-border)" : "var(--pending-border)"}`,
+            background: isMatch
+              ? "var(--valid-bg)"
+              : isInvalid
+              ? "var(--invalid-bg)"
+              : "var(--pending-bg)",
+            border: `1px solid ${
+              isMatch
+                ? "var(--valid-border)"
+                : isInvalid
+                ? "var(--invalid-border)"
+                : "var(--pending-border)"
+            }`,
             borderRadius: "10px",
             padding: "1rem 1.25rem",
             marginBottom: "1.5rem",
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
+            gap: "1rem",
           }}
         >
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <span style={{ fontSize: "1.2rem" }}>{isMatch ? "✓" : "⚠️"}</span>
-              <strong style={{ fontSize: "1rem", color: isMatch ? "var(--valid)" : checkResult ? "var(--invalid)" : "var(--pending)" }}>
-                {isMatch ? "DỮ LIỆU TOÀN VẸN VÀ HỢP LỆ" : checkResult?.result ? "PHÁT HIỆN DỮ LIỆU BỊ SAI LỆCH" : "ĐANG KIỂM TRA..."}
+              <span style={{ fontSize: "1.2rem" }}>
+                {isMatch ? "✓" : isInvalid ? "⚠️" : "⏳"}
+              </span>
+              <strong
+                style={{
+                  fontSize: "1rem",
+                  color: isMatch
+                    ? "var(--valid)"
+                    : isInvalid
+                    ? "var(--invalid)"
+                    : "var(--pending)",
+                }}
+              >
+                {isMatch
+                  ? "DỮ LIỆU TOÀN VẸN VÀ HỢP LỆ"
+                  : isInvalid
+                  ? "PHÁT HIỆN DỮ LIỆU BỊ SAI LỆCH"
+                  : checking
+                  ? "ĐANG KIỂM TRA ĐỐI SOÁT VỚI BLOCKCHAIN..."
+                  : "CHƯA ĐỐI SOÁT TOÀN VẸN"}
               </strong>
             </div>
-            <p style={{ fontSize: "0.85rem", color: isMatch ? "#065f46" : checkResult ? "#991b1b" : "#92400e", marginTop: "0.25rem" }}>
-              {checkResult?.message || "Đang đối soát dữ liệu..."}
+            <p
+              style={{
+                fontSize: "0.85rem",
+                color: isMatch ? "#065f46" : isInvalid ? "#991b1b" : "#92400e",
+                marginTop: "0.25rem",
+              }}
+            >
+              {checkResult?.message ||
+                (checking
+                  ? "Hệ thống đang truy vấn bằng chứng niêm phong từ Smart Contract..."
+                  : "Dữ liệu chưa được đối chiếu trực tiếp với Blockchain.")}
             </p>
             {checkResult?.reason && (
-              <div style={{ fontSize: "0.75rem", color: "var(--invalid)", marginTop: "0.2rem", fontWeight: 700 }}>
-                Nguyên nhân: {checkResult.reason === "HASH_MISMATCH" ? "Mã băm không khớp với bản gốc đã niêm phong" : checkResult.reason}
+              <div
+                style={{
+                  fontSize: "0.75rem",
+                  color: "var(--invalid)",
+                  marginTop: "0.2rem",
+                  fontWeight: 700,
+                }}
+              >
+                Nguyên nhân:{" "}
+                {checkResult.reason === "HASH_MISMATCH"
+                  ? "Mã băm CSDL không khớp với bản gốc đã niêm phong trên Smart Contract"
+                  : checkResult.reason === "VERSION_MISMATCH"
+                  ? "Lệch phiên bản giữa CSDL và Blockchain"
+                  : checkResult.reason === "ACTION_MISMATCH"
+                  ? "Trạng thái bản ghi không khớp với hành động trên Blockchain"
+                  : checkResult.reason === "MISSING_ON_CHAIN"
+                  ? "Không tìm thấy bằng chứng niêm phong trên Blockchain"
+                  : checkResult.reason}
               </div>
             )}
           </div>
@@ -117,19 +268,81 @@ export const ScoreDetailModal: React.FC<ScoreDetailModalProps> = ({ score, onClo
         </div>
 
         {/* Side-by-Side Comparison: MySQL vs Blockchain */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1.5rem" }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "1rem",
+            marginBottom: "1.5rem",
+          }}
+        >
           {/* MySQL Side */}
-          <div style={{ background: "#f8fafc", padding: "1rem", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
-            <h4 style={{ fontSize: "0.9rem", color: "#0284c7", marginBottom: "0.75rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
-              Dữ liệu điểm hiện tại
+          <div
+            style={{
+              background: "#f8fafc",
+              padding: "1rem",
+              borderRadius: "8px",
+              border: "1px solid #e2e8f0",
+            }}
+          >
+            <h4
+              style={{
+                fontSize: "0.9rem",
+                color: "#0284c7",
+                marginBottom: "0.75rem",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.4rem",
+              }}
+            >
+              Dữ liệu điểm hiện tại (CSDL)
             </h4>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", fontSize: "0.8rem", color: "#334155" }}>
-              <div>Điểm: <strong style={{ fontSize: "1.1rem", color: "var(--primary-ptit)" }}>{s.score}</strong></div>
-              <div>Phiên bản: <strong>v{s.version}</strong></div>
-              <div>Trạng thái: <span className={`badge ${s.status === "ACTIVE" ? "badge-valid" : "badge-invalid"}`} style={{ fontSize: "0.65rem" }}>{s.status === "ACTIVE" ? "Đang dùng" : "Đã xóa"}</span></div>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.5rem",
+                fontSize: "0.8rem",
+                color: "#334155",
+              }}
+            >
+              <div>
+                Điểm:{" "}
+                <strong style={{ fontSize: "1.1rem", color: "var(--primary-ptit)" }}>
+                  {s.score}
+                </strong>
+              </div>
+              <div>
+                Phiên bản: <strong>v{s.version}</strong>
+              </div>
+              <div>
+                Trạng thái:{" "}
+                <span
+                  className={`badge ${
+                    s.status === "ACTIVE" ? "badge-valid" : "badge-invalid"
+                  }`}
+                  style={{ fontSize: "0.65rem" }}
+                >
+                  {s.status === "ACTIVE" ? "Đang dùng" : "Đã xóa"}
+                </span>
+              </div>
               <div style={{ marginTop: "0.25rem" }}>
-                <div style={{ color: "#64748b", fontSize: "0.72rem" }}>Mã băm dữ liệu hiện tại (SHA-256):</div>
-                <div className="mono" style={{ fontSize: "0.68rem", color: "#334155", wordBreak: "break-all", background: "#ffffff", padding: "0.35rem 0.5rem", borderRadius: "4px", border: "1px solid #cbd5e1", marginTop: "0.2rem" }}>
+                <div style={{ color: "#64748b", fontSize: "0.72rem" }}>
+                  Mã băm dữ liệu hiện tại (SHA-256):
+                </div>
+                <div
+                  className="mono"
+                  style={{
+                    fontSize: "0.68rem",
+                    color: "#334155",
+                    wordBreak: "break-all",
+                    background: "#ffffff",
+                    padding: "0.35rem 0.5rem",
+                    borderRadius: "4px",
+                    border: "1px solid #cbd5e1",
+                    marginTop: "0.2rem",
+                  }}
+                >
                   {s.dataHash}
                 </div>
               </div>
@@ -137,18 +350,83 @@ export const ScoreDetailModal: React.FC<ScoreDetailModalProps> = ({ score, onClo
           </div>
 
           {/* Blockchain Side */}
-          <div style={{ background: "#f8fafc", padding: "1rem", borderRadius: "8px", border: "1px solid #e2e8f0" }}>
-            <h4 style={{ fontSize: "0.9rem", color: "#7c3aed", marginBottom: "0.75rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
-              Bằng chứng niêm phong gốc
+          <div
+            style={{
+              background: "#f8fafc",
+              padding: "1rem",
+              borderRadius: "8px",
+              border: "1px solid #e2e8f0",
+            }}
+          >
+            <h4
+              style={{
+                fontSize: "0.9rem",
+                color: "#7c3aed",
+                marginBottom: "0.75rem",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.4rem",
+              }}
+            >
+              Bằng chứng niêm phong gốc (Blockchain)
             </h4>
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", fontSize: "0.8rem", color: "#334155" }}>
-              <div>Phiên bản niêm phong: <strong>v{checkResult?.blockchainVersion ?? "N/A"}</strong></div>
-              <div>Thao tác ghi nhận: <strong>{checkResult?.blockchainAction || "N/A"}</strong></div>
-              <div>Thời gian ghi nhận: <span style={{ color: "#64748b" }}>{checkResult?.blockchainTimestamp ? new Date(checkResult.blockchainTimestamp).toLocaleString("vi-VN") : "N/A"}</span></div>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.5rem",
+                fontSize: "0.8rem",
+                color: "#334155",
+              }}
+            >
+              <div>
+                Phiên bản niêm phong:{" "}
+                <strong>
+                  {displayBcVersion != null ? `v${displayBcVersion}` : checking ? "..." : "N/A"}
+                </strong>
+              </div>
+              <div>
+                Thao tác ghi nhận:{" "}
+                <strong>{displayBcAction || (checking ? "Đang truy vấn..." : "N/A")}</strong>
+              </div>
+              <div>
+                Thời gian ghi nhận:{" "}
+                <span style={{ color: "#64748b" }}>
+                  {displayBcTimestamp || (checking ? "Đang truy vấn..." : "N/A")}
+                </span>
+              </div>
               <div style={{ marginTop: "0.25rem" }}>
-                <div style={{ color: "#64748b", fontSize: "0.72rem" }}>Mã băm gốc đã niêm phong:</div>
-                <div className="mono" style={{ fontSize: "0.68rem", color: isMatch ? "var(--valid)" : "var(--invalid)", wordBreak: "break-all", background: "#ffffff", padding: "0.35rem 0.5rem", borderRadius: "4px", border: `1px solid ${isMatch ? "var(--valid-border)" : "var(--invalid-border)"}`, marginTop: "0.2rem", fontWeight: 600 }}>
-                  {checkResult?.blockchainHash || "Chưa tìm thấy bằng chứng niêm phong"}
+                <div style={{ color: "#64748b", fontSize: "0.72rem" }}>
+                  Mã băm gốc đã niêm phong:
+                </div>
+                <div
+                  className="mono"
+                  style={{
+                    fontSize: "0.68rem",
+                    color: isMatch
+                      ? "var(--valid)"
+                      : isInvalid
+                      ? "var(--invalid)"
+                      : "#475569",
+                    wordBreak: "break-all",
+                    background: "#ffffff",
+                    padding: "0.35rem 0.5rem",
+                    borderRadius: "4px",
+                    border: `1px solid ${
+                      isMatch
+                        ? "var(--valid-border)"
+                        : isInvalid
+                        ? "var(--invalid-border)"
+                        : "#cbd5e1"
+                    }`,
+                    marginTop: "0.2rem",
+                    fontWeight: isMatch || isInvalid ? 600 : 400,
+                  }}
+                >
+                  {displayBcHash ||
+                    (checking
+                      ? "Đang đối soát dữ liệu với Blockchain..."
+                      : "Chưa tìm thấy bằng chứng niêm phong")}
                 </div>
               </div>
             </div>
@@ -156,8 +434,23 @@ export const ScoreDetailModal: React.FC<ScoreDetailModalProps> = ({ score, onClo
         </div>
 
         {/* Record Key Proof info */}
-        <div style={{ background: "#f8fafc", padding: "0.75rem 1rem", borderRadius: "8px", border: "1px solid #e2e8f0", marginBottom: "1.5rem", fontSize: "0.75rem" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div
+          style={{
+            background: "#f8fafc",
+            padding: "0.75rem 1rem",
+            borderRadius: "8px",
+            border: "1px solid #e2e8f0",
+            marginBottom: "1.5rem",
+            fontSize: "0.75rem",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
             <span style={{ color: "#64748b", fontWeight: 600 }}>
               Mã định danh bản ghi (Record Key):
             </span>
@@ -169,22 +462,42 @@ export const ScoreDetailModal: React.FC<ScoreDetailModalProps> = ({ score, onClo
               {copiedKey === "recordKey" ? "✓ Đã sao chép" : "Sao chép"}
             </button>
           </div>
-          <div className="mono" style={{ color: "#334155", wordBreak: "break-all", marginTop: "0.2rem" }}>
+          <div
+            className="mono"
+            style={{ color: "#334155", wordBreak: "break-all", marginTop: "0.2rem" }}
+          >
             {s.recordKey}
           </div>
         </div>
 
         {/* Version History Timeline (Append-Only) */}
         <div>
-          <h3 style={{ fontSize: "1rem", fontWeight: 700, marginBottom: "0.75rem", display: "flex", alignItems: "center", gap: "0.4rem", color: "#1e293b" }}>
+          <h3
+            style={{
+              fontSize: "1rem",
+              fontWeight: 700,
+              marginBottom: "0.75rem",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.4rem",
+              color: "#1e293b",
+            }}
+          >
             Lịch sử các phiên bản điểm
           </h3>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
             {detail?.versions && detail.versions.length > 0 ? (
               detail.versions.map((v) => {
-                const histCheck = checkResult?.historyChecks?.find((h) => h.version === v.version);
-                const isHistValid = histCheck?.matches;
+                const histCheck = checkResult?.historyChecks?.find(
+                  (h) => h.version === v.version
+                );
+                const isHistValid = histCheck
+                  ? histCheck.matches
+                  : isMatch && v.version === s.version;
+                const isHistInvalid = histCheck
+                  ? !histCheck.matches
+                  : isInvalid && v.version === s.version;
 
                 return (
                   <div
@@ -192,36 +505,88 @@ export const ScoreDetailModal: React.FC<ScoreDetailModalProps> = ({ score, onClo
                     style={{
                       background: "#ffffff",
                       border: "1px solid #e2e8f0",
-                      borderLeft: `4px solid ${isHistValid ? "var(--valid)" : histCheck ? "var(--invalid)" : "#3b82f6"}`,
+                      borderLeft: `4px solid ${
+                        isHistValid
+                          ? "var(--valid)"
+                          : isHistInvalid
+                          ? "var(--invalid)"
+                          : v.transactionHash
+                          ? "var(--valid)"
+                          : "#cbd5e1"
+                      }`,
                       borderRadius: "8px",
                       padding: "0.75rem 1rem",
                       fontSize: "0.8rem",
                       color: "#1e293b",
                     }}
                   >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
                       <div>
                         <strong>Phiên bản {v.version}</strong> ({v.action}) — Điểm:{" "}
-                        <strong style={{ color: "var(--primary-ptit)" }}>{v.score}</strong>
+                        <strong style={{ color: "var(--primary-ptit)" }}>
+                          {v.score}
+                        </strong>
                       </div>
-                      <span className={`badge ${isHistValid ? "badge-valid" : histCheck ? "badge-invalid" : "badge-pending"}`} style={{ fontSize: "0.65rem" }}>
-                        {isHistValid ? "Hợp lệ" : histCheck ? "Sai lệch" : "Chưa kiểm tra"}
+                      <span
+                        className={`badge ${
+                          isHistValid
+                            ? "badge-valid"
+                            : isHistInvalid
+                            ? "badge-invalid"
+                            : v.transactionHash
+                            ? "badge-valid"
+                            : "badge-pending"
+                        }`}
+                        style={{ fontSize: "0.65rem" }}
+                      >
+                        {isHistValid
+                          ? "Hợp lệ"
+                          : isHistInvalid
+                          ? "Sai lệch"
+                          : v.transactionHash
+                          ? "Đã niêm phong"
+                          : "Chờ kiểm tra"}
                       </span>
                     </div>
 
-                    <div className="mono" style={{ fontSize: "0.7rem", color: "#64748b", marginTop: "0.3rem" }}>
+                    <div
+                      className="mono"
+                      style={{ fontSize: "0.7rem", color: "#64748b", marginTop: "0.3rem" }}
+                    >
                       Data Hash: {v.dataHash}
                     </div>
 
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.7rem", color: "#64748b", marginTop: "0.25rem" }}>
-                      <span>Tx: {v.transactionHash ? `${v.transactionHash.slice(0, 18)}...` : "Chưa có"} (Block #{v.blockNumber || "..."})</span>
-                      <span>{new Date(v.createdAt).toLocaleString()}</span>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        fontSize: "0.7rem",
+                        color: "#64748b",
+                        marginTop: "0.25rem",
+                      }}
+                    >
+                      <span>
+                        Tx:{" "}
+                        {v.transactionHash
+                          ? `${v.transactionHash.slice(0, 18)}...`
+                          : "Chưa có"}{" "}
+                        (Block #{v.blockNumber || "..."})
+                      </span>
+                      <span>{new Date(v.createdAt).toLocaleString("vi-VN")}</span>
                     </div>
                   </div>
                 );
               })
             ) : (
-              <div style={{ color: "#64748b", fontSize: "0.85rem" }}>Đang tải lịch sử...</div>
+              <div style={{ color: "#64748b", fontSize: "0.85rem", padding: "1rem 0" }}>
+                Đang tải lịch sử các phiên bản...
+              </div>
             )}
           </div>
         </div>
