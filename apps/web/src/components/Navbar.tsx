@@ -53,10 +53,10 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
         <div>
           <div style={{ fontSize: "0.98rem", fontWeight: 700, letterSpacing: "0.01em", textTransform: "uppercase" }}>
-            Cổng Thông Tin Quản Lý Đào Tạo & Toàn Vẹn Điểm Số
+            CỔNG THÔNG TIN QUẢN LÝ ĐÀO TẠO
           </div>
           <div style={{ fontSize: "0.72rem", opacity: 0.85 }}>
-            Học viện Công nghệ Bưu chính Viễn thông • Blockchain Hardhat & MySQL
+            Học viện Công nghệ Bưu chính Viễn thông
           </div>
         </div>
       </div>

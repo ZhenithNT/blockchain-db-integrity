@@ -63,7 +63,7 @@ export const AddEditScoreModal: React.FC<AddEditScoreModalProps> = ({
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem", borderBottom: "1px solid #334155", paddingBottom: "0.75rem" }}>
           <h2 style={{ fontSize: "1.2rem", fontWeight: 700 }}>
-            {isEdit ? `✏️ Cập Nhật Điểm: ${scoreToEdit.studentId}` : "➕ Thêm Bản Ghi Điểm Mới"}
+            {isEdit ? `Chỉnh sửa điểm: ${scoreToEdit.studentId}` : "Thêm điểm sinh viên"}
           </h2>
           <button className="btn btn-outline btn-sm" onClick={onClose}>
             ✕
@@ -79,12 +79,12 @@ export const AddEditScoreModal: React.FC<AddEditScoreModalProps> = ({
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
           <div>
             <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, color: "#cbd5e1", marginBottom: "0.3rem" }}>
-              Mã Sinh Viên
+              Mã sinh viên
             </label>
             <input
               type="text"
               className="input-field"
-              placeholder="VD: SV001"
+              placeholder="VD: B23DCAT111"
               value={studentId}
               onChange={(e) => setStudentId(e.target.value)}
               disabled={isEdit}
@@ -95,12 +95,12 @@ export const AddEditScoreModal: React.FC<AddEditScoreModalProps> = ({
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
             <div>
               <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, color: "#cbd5e1", marginBottom: "0.3rem" }}>
-                Mã Môn Học
+                Mã môn học
               </label>
               <input
                 type="text"
                 className="input-field"
-                placeholder="VD: ATWEB"
+                placeholder="VD: INT1313"
                 value={courseCode}
                 onChange={(e) => setCourseCode(e.target.value)}
                 disabled={isEdit}
@@ -110,12 +110,12 @@ export const AddEditScoreModal: React.FC<AddEditScoreModalProps> = ({
 
             <div>
               <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, color: "#cbd5e1", marginBottom: "0.3rem" }}>
-                Học Kỳ
+                Học kỳ
               </label>
               <input
                 type="text"
                 className="input-field"
-                placeholder="VD: 2026-1"
+                placeholder="VD: 2025-2026.1"
                 value={semester}
                 onChange={(e) => setSemester(e.target.value)}
                 disabled={isEdit}
@@ -126,7 +126,7 @@ export const AddEditScoreModal: React.FC<AddEditScoreModalProps> = ({
 
           <div>
             <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, color: "#cbd5e1", marginBottom: "0.3rem" }}>
-              {isEdit ? `Điểm Mới (Hiện tại: ${scoreToEdit.score} -> Version ${scoreToEdit.version + 1})` : "Điểm Số (0.00 - 10.00)"}
+              {isEdit ? `Điểm mới (Điểm hiện tại: ${scoreToEdit.score})` : "Điểm học phần (0.00 - 10.00)"}
             </label>
             <input
               type="number"
@@ -141,7 +141,7 @@ export const AddEditScoreModal: React.FC<AddEditScoreModalProps> = ({
           </div>
 
           <div style={{ background: "#1e293b", padding: "0.75rem", borderRadius: "8px", border: "1px solid #334155", fontSize: "0.75rem", color: "#94a3b8" }}>
-            ⛓️ <strong>Lưu ý Blockchain:</strong> Khi bấm lưu, backend sẽ tính mã băm chuẩn SHA-256 và gửi giao dịch tới Smart Contract. Bản ghi chỉ được lưu vào MySQL sau khi Blockchain xác nhận receipt.
+            💡 <strong>Lưu ý:</strong> Dữ liệu sau khi lưu sẽ được niêm phong toàn vẹn và ghi nhận lịch sử thay đổi.
           </div>
 
           <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem", marginTop: "0.5rem" }}>
@@ -149,7 +149,7 @@ export const AddEditScoreModal: React.FC<AddEditScoreModalProps> = ({
               Hủy
             </button>
             <button type="submit" className="btn btn-primary" disabled={loading}>
-              {loading ? "⏳ Đang ghi lên Blockchain..." : isEdit ? "Cập Nhật Version Mới" : "Tạo Bản Ghi & Neo Blockchain"}
+              {loading ? "Đang lưu..." : isEdit ? "Lưu thay đổi" : "Lưu điểm"}
             </button>
           </div>
         </form>

@@ -126,7 +126,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess }) => {
             HỆ THỐNG QUẢN LÝ ĐÀO TẠO
           </h2>
           <p style={{ fontSize: "0.82rem", color: "#64748b", marginTop: "0.25rem" }}>
-            Chứng thực & Lưu vết Toàn vẹn Dữ liệu bằng Blockchain
+            Học viện Công nghệ Bưu chính Viễn thông
           </p>
         </div>
 
@@ -160,7 +160,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess }) => {
               transition: "all 0.2s ease",
             }}
           >
-            🔑 Đăng Nhập
+            Đăng nhập
           </button>
           <button
             type="button"
@@ -182,7 +182,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess }) => {
               transition: "all 0.2s ease",
             }}
           >
-            ✨ Đăng Ký Tài Khoản
+            Đăng ký tài khoản
           </button>
         </div>
 
@@ -198,7 +198,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess }) => {
               marginBottom: "1.25rem",
             }}
           >
-            ⚠️ {error}
+            {error}
           </div>
         )}
 
@@ -214,7 +214,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess }) => {
               marginBottom: "1.25rem",
             }}
           >
-            ✓ {successMsg}
+            {successMsg}
           </div>
         )}
 
@@ -226,7 +226,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess }) => {
               <input
                 type="text"
                 className="form-input"
-                placeholder="Nhập tên đăng nhập (VD: admin, lecturer, sv_nghia)"
+                placeholder="Nhập tên đăng nhập"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
@@ -238,7 +238,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess }) => {
               <input
                 type="password"
                 className="form-input"
-                placeholder="Nhập mật khẩu..."
+                placeholder="Nhập mật khẩu"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -258,13 +258,13 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess }) => {
               }}
               disabled={loading}
             >
-              {loading ? "Đang xác thực..." : "Đăng Nhập"}
+              {loading ? "Đang đăng nhập..." : "Đăng nhập"}
             </button>
 
             {/* Tài khoản mẫu tiện thử nghiệm */}
             <div style={{ marginTop: "1rem", borderTop: "1px solid #e2e8f0", paddingTop: "1rem" }}>
               <div style={{ fontSize: "0.78rem", fontWeight: 700, color: "#64748b", marginBottom: "0.5rem" }}>
-                💡 Tài khoản Quản trị viên khởi tạo hệ thống:
+                Tài khoản mẫu dùng thử:
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                 <button
@@ -280,10 +280,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess }) => {
                     textAlign: "left",
                   }}
                 >
-                  🔴 <strong>Quản trị viên (ADMIN)</strong>: `admin` / `Admin@123`
+                  <strong>Quản trị viên (ADMIN)</strong>: <code>admin</code> / <code>Admin@123</code>
                 </button>
                 <div style={{ fontSize: "0.75rem", color: "#64748b", lineHeight: 1.4 }}>
-                  👉 Bạn có thể tự tạo tài khoản <strong>Sinh viên</strong> hoặc <strong>Giảng viên</strong> mới theo ý mình tại tab <strong>"✨ Đăng Ký Tài Khoản"</strong> ở phía trên!
+                  Bạn có thể tạo tài khoản Sinh viên hoặc Giảng viên tại tab "Đăng ký tài khoản" ở trên.
                 </div>
               </div>
             </div>
@@ -303,7 +303,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess }) => {
                     checked={regRole === "STUDENT"}
                     onChange={() => setRegRole("STUDENT")}
                   />
-                  <span>🎓 Sinh viên</span>
+                  <span>Sinh viên</span>
                 </label>
                 <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.85rem", cursor: "pointer" }}>
                   <input
@@ -312,17 +312,17 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess }) => {
                     checked={regRole === "LECTURER"}
                     onChange={() => setRegRole("LECTURER")}
                   />
-                  <span>👨‍🏫 Giảng viên</span>
+                  <span>Giảng viên</span>
                 </label>
               </div>
             </div>
 
             <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label" style={{ fontWeight: 600 }}>Họ và tên đầy đủ:</label>
+              <label className="form-label" style={{ fontWeight: 600 }}>Họ và tên:</label>
               <input
                 type="text"
                 className="form-input"
-                placeholder={regRole === "STUDENT" ? "VD: Nguyễn Văn An" : "VD: TS. Trần Văn Bình"}
+                placeholder={regRole === "STUDENT" ? "Ví dụ: Nguyễn Văn An" : "Ví dụ: Trần Văn Bình"}
                 value={regFullName}
                 onChange={(e) => setRegFullName(e.target.value)}
                 required
@@ -332,12 +332,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess }) => {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label" style={{ fontWeight: 600 }}>
-                  {regRole === "STUDENT" ? "Mã Sinh Viên:" : "Mã Giảng Viên:"}
+                  {regRole === "STUDENT" ? "Mã sinh viên:" : "Mã giảng viên:"}
                 </label>
                 <input
                   type="text"
                   className="form-input"
-                  placeholder={regRole === "STUDENT" ? "VD: B23DCAT999" : "VD: GV999"}
+                  placeholder={regRole === "STUDENT" ? "Ví dụ: B23DCAT001" : "Ví dụ: GV001"}
                   value={regCode}
                   onChange={(e) => setRegCode(e.target.value)}
                 />
@@ -350,7 +350,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess }) => {
                 <input
                   type="text"
                   className="form-input"
-                  placeholder={regRole === "STUDENT" ? "VD: D23CQAT01-B" : "VD: Khoa CNTT 1"}
+                  placeholder={regRole === "STUDENT" ? "Ví dụ: D23CQAT01-B" : "Ví dụ: Khoa CNTT 1"}
                   value={regExtra}
                   onChange={(e) => setRegExtra(e.target.value)}
                 />
@@ -363,7 +363,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess }) => {
                 <input
                   type="text"
                   className="form-input"
-                  placeholder="VD: sv_an hoặc gv_binh"
+                  placeholder="Tên đăng nhập"
                   value={regUsername}
                   onChange={(e) => setRegUsername(e.target.value)}
                   required
@@ -375,7 +375,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess }) => {
                 <input
                   type="password"
                   className="form-input"
-                  placeholder="Mật khẩu ít nhất 6 ký tự"
+                  placeholder="Mật khẩu tối thiểu 6 ký tự"
                   value={regPassword}
                   onChange={(e) => setRegPassword(e.target.value)}
                   required
@@ -388,7 +388,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess }) => {
               <input
                 type="email"
                 className="form-input"
-                placeholder="VD: user@ptit.edu.vn"
+                placeholder="email@ptit.edu.vn"
                 value={regEmail}
                 onChange={(e) => setRegEmail(e.target.value)}
               />
@@ -407,7 +407,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ onLoginSuccess }) => {
               }}
               disabled={loading}
             >
-              {loading ? "Đang xử lý đăng ký..." : "Đăng Ký & Vào Hệ Thống"}
+              {loading ? "Đang đăng ký..." : "Đăng ký tài khoản"}
             </button>
           </form>
         )}

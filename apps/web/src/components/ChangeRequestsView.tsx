@@ -79,16 +79,15 @@ export const ChangeRequestsView: React.FC<ChangeRequestsViewProps> = ({ user }) 
       <div className="ptit-card">
         <div className="ptit-card-header">
           <div className="ptit-card-title">
-            <span>✍️</span>
-            <span>QUẢN LÝ YÊU CẦU ĐIỀU CHỈNH ĐIỂM (HẬU KHÓA SỔ & PHÚC KHẢO)</span>
+            <span>QUẢN LÝ YÊU CẦU ĐIỀU CHỈNH ĐIỂM</span>
           </div>
           <button className="btn btn-outline btn-sm" onClick={loadRequests}>
-            🔄 Làm mới
+            Làm mới
           </button>
         </div>
 
-        <div style={{ fontSize: "0.85rem", color: "#475569", marginBottom: "1rem" }}>
-          Quy trình: Giảng viên gửi đề xuất kèm biên bản & minh chứng ➔ Ban Quản trị Đào tạo thẩm định ➔ Phê duyệt tự động tạo Version mới và neo Evidence lên Blockchain.
+        <div style={{ fontSize: "0.85rem", color: "#64748b", marginBottom: "1rem" }}>
+          Xem và xử lý các yêu cầu điều chỉnh điểm học phần hoặc phúc khảo bài thi.
         </div>
 
         {/* Status Filter Tabs */}
@@ -103,19 +102,19 @@ export const ChangeRequestsView: React.FC<ChangeRequestsViewProps> = ({ user }) 
             className={`ptit-tab-pill ${statusFilter === "PENDING" ? "active" : ""}`}
             onClick={() => setStatusFilter("PENDING")}
           >
-            Chờ duyệt (PENDING)
+            Chờ duyệt
           </button>
           <button
             className={`ptit-tab-pill ${statusFilter === "APPROVED" ? "active" : ""}`}
             onClick={() => setStatusFilter("APPROVED")}
           >
-            Đã duyệt (APPROVED)
+            Đã duyệt
           </button>
           <button
             className={`ptit-tab-pill ${statusFilter === "REJECTED" ? "active" : ""}`}
             onClick={() => setStatusFilter("REJECTED")}
           >
-            Đã từ chối (REJECTED)
+            Đã từ chối
           </button>
         </div>
       </div>
@@ -151,7 +150,7 @@ export const ChangeRequestsView: React.FC<ChangeRequestsViewProps> = ({ user }) 
                   <th>Thời gian</th>
                   <th style={{ textAlign: "center" }}>Trạng thái</th>
                   {user.role === "ADMIN" && (
-                    <th style={{ textAlign: "center", width: "160px" }}>Hành động</th>
+                    <th style={{ textAlign: "center", width: "160px" }}>Thao tác</th>
                   )}
                 </tr>
               </thead>
@@ -186,7 +185,7 @@ export const ChangeRequestsView: React.FC<ChangeRequestsViewProps> = ({ user }) 
                       )}
                       {r.reviewNote && (
                         <div style={{ fontSize: "0.75rem", color: "#6b7280", marginTop: "0.25rem", fontStyle: "italic" }}>
-                          Phê duyệt: {r.reviewNote} ({r.reviewedBy})
+                          Phản hồi: {r.reviewNote} ({r.reviewedBy})
                         </div>
                       )}
                     </td>
@@ -206,9 +205,9 @@ export const ChangeRequestsView: React.FC<ChangeRequestsViewProps> = ({ user }) 
                             : "badge-pending"
                         }`}
                       >
-                        {r.status === "APPROVED" && "✅ ĐÃ DUYỆT (ON-CHAIN)"}
-                        {r.status === "REJECTED" && "❌ TỪ CHỐI"}
-                        {r.status === "PENDING" && "⏳ CHỜ DUYỆT"}
+                        {r.status === "APPROVED" && "Đã duyệt"}
+                        {r.status === "REJECTED" && "Đã từ chối"}
+                        {r.status === "PENDING" && "Chờ duyệt"}
                       </span>
                     </td>
                     {user.role === "ADMIN" && (
@@ -219,13 +218,13 @@ export const ChangeRequestsView: React.FC<ChangeRequestsViewProps> = ({ user }) 
                               className="btn btn-success btn-sm"
                               onClick={() => handleOpenReview(r, "APPROVED")}
                             >
-                              ✓ Duyệt
+                              Duyệt
                             </button>
                             <button
                               className="btn btn-danger btn-sm"
                               onClick={() => handleOpenReview(r, "REJECTED")}
                             >
-                              ✕ Bác
+                              Từ chối
                             </button>
                           </div>
                         ) : (
@@ -247,7 +246,7 @@ export const ChangeRequestsView: React.FC<ChangeRequestsViewProps> = ({ user }) 
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3 style={{ color: reviewDecision === "APPROVED" ? "var(--valid)" : "var(--invalid)", fontSize: "1.05rem" }}>
-                {reviewDecision === "APPROVED" ? "Phê duyệt điều chỉnh điểm & Ký số Blockchain" : "Từ chối yêu cầu điều chỉnh"}
+                {reviewDecision === "APPROVED" ? "Phê duyệt điều chỉnh điểm" : "Từ chối yêu cầu điều chỉnh"}
               </h3>
               <button className="btn btn-outline btn-sm" onClick={() => setReviewingItem(null)}>
                 ✕ Đóng
@@ -258,17 +257,17 @@ export const ChangeRequestsView: React.FC<ChangeRequestsViewProps> = ({ user }) 
               <div style={{ background: "#f8fafc", padding: "0.85rem", borderRadius: "6px", fontSize: "0.85rem" }}>
                 <div><strong>Sinh viên:</strong> {reviewingItem.studentName} ({reviewingItem.studentCode})</div>
                 <div><strong>Điểm thay đổi:</strong> {reviewingItem.currentScore} ➔ <strong style={{ color: "var(--primary-ptit)" }}>{reviewingItem.proposedScore}</strong></div>
-                <div><strong>Lý do GV đưa ra:</strong> {reviewingItem.reason}</div>
+                <div><strong>Lý do:</strong> {reviewingItem.reason}</div>
               </div>
 
               {reviewDecision === "APPROVED" && (
                 <div style={{ background: "var(--valid-bg)", border: "1px solid var(--valid-border)", padding: "0.75rem", borderRadius: "6px", fontSize: "0.82rem", color: "var(--valid)" }}>
-                  💡 Khi bấm xác nhận, hệ thống sẽ thực hiện giao dịch <code>appendEvidence</code> với Action <strong>UPDATE</strong> lên Smart Contract trên Hardhat node.
+                  Khi phê duyệt, hệ thống sẽ tự động cập nhật điểm mới và lưu vết xác thực dữ liệu.
                 </div>
               )}
 
               <div className="form-group">
-                <label className="form-label">Ghi chú phê duyệt của Phòng Đào tạo:</label>
+                <label className="form-label">Ý kiến phản hồi / Ghi chú:</label>
                 <textarea
                   className="form-textarea"
                   rows={3}
@@ -287,7 +286,7 @@ export const ChangeRequestsView: React.FC<ChangeRequestsViewProps> = ({ user }) 
                 onClick={handleConfirmReview}
                 disabled={submittingReview}
               >
-                {submittingReview ? "Đang xử lý & ghi chuỗi..." : reviewDecision === "APPROVED" ? "Xác nhận duyệt & Ghi Blockchain" : "Xác nhận từ chối"}
+                {submittingReview ? "Đang xử lý..." : reviewDecision === "APPROVED" ? "Xác nhận duyệt" : "Xác nhận từ chối"}
               </button>
             </div>
           </div>

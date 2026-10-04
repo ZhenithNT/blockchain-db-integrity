@@ -93,7 +93,7 @@ export const StudentGradeView: React.FC<StudentGradeViewProps> = ({ user }) => {
         <div className="ptit-card-header">
           <div className="ptit-card-title">
             <span>🎓</span>
-            <span>BẢNG ĐIỂM HỌC TẬP & XÁC THỰC TOÀN VẸN BLOCKCHAIN</span>
+            <span>BẢNG ĐIỂM HỌC TẬP TÍCH LŨY</span>
           </div>
           <button className="btn btn-outline btn-sm" onClick={loadGrades}>
             🔄 Làm mới
@@ -158,10 +158,10 @@ export const StudentGradeView: React.FC<StudentGradeViewProps> = ({ user }) => {
       <div className="ptit-card">
         <div style={{ marginBottom: "0.85rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <h3 style={{ fontSize: "0.95rem", fontWeight: 700, color: "#334155" }}>
-            Chi tiết điểm học phần năm học 2025-2026 (Học kỳ 1)
+            Chi tiết điểm học phần
           </h3>
           <span style={{ fontSize: "0.78rem", color: "#059669", fontWeight: 600 }}>
-            🛡️ Tất cả điểm số đã được cấp bằng chứng điện tử trên Hardhat Integrity Registry
+            ✓ Điểm số đã được xác thực và niêm phong trong hệ thống đào tạo
           </span>
         </div>
 
@@ -186,8 +186,8 @@ export const StudentGradeView: React.FC<StudentGradeViewProps> = ({ user }) => {
                   <th style={{ textAlign: "center" }}>Tổng kết</th>
                   <th style={{ textAlign: "center" }}>Điểm chữ</th>
                   <th style={{ textAlign: "center" }}>Hệ 4</th>
-                  <th style={{ textAlign: "center" }}>Chứng thực Blockchain</th>
-                  <th style={{ textAlign: "center" }}>Đối soát</th>
+                  <th style={{ textAlign: "center" }}>Trạng thái xác thực</th>
+                  <th style={{ textAlign: "center" }}>Kiểm tra</th>
                 </tr>
               </thead>
               <tbody>
@@ -223,7 +223,7 @@ export const StudentGradeView: React.FC<StudentGradeViewProps> = ({ user }) => {
                         {item.blockchainStatus === "CONFIRMED" ? (
                           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.2rem" }}>
                             <span className="badge badge-valid">
-                              ⛓️ Khóa sổ (v{item.version})
+                              Đã xác thực (v{item.version})
                             </span>
                             {item.latestTxHash && (
                               <span className="mono" style={{ fontSize: "0.68rem", color: "#0284c7" }}>
@@ -241,7 +241,7 @@ export const StudentGradeView: React.FC<StudentGradeViewProps> = ({ user }) => {
                           onClick={() => handleVerifyScore(item)}
                           disabled={verifyingKey === item.recordKey}
                         >
-                          {verifyingKey === item.recordKey ? "..." : "⚡ Đối soát"}
+                          {verifyingKey === item.recordKey ? "..." : "Kiểm tra"}
                         </button>
                         {check && (
                           <div style={{ marginTop: "0.25rem" }}>
@@ -249,7 +249,7 @@ export const StudentGradeView: React.FC<StudentGradeViewProps> = ({ user }) => {
                               className={`badge ${check.result === "VALID" ? "badge-valid" : "badge-invalid"}`}
                               style={{ fontSize: "0.7rem" }}
                             >
-                              {check.result}
+                              {check.result === "VALID" ? "Hợp lệ" : "Sai lệch"}
                             </span>
                           </div>
                         )}

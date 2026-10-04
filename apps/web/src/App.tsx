@@ -142,13 +142,13 @@ export const App: React.FC = () => {
             {activeTab === "program" && (
               <div className="ptit-card">
                 <div className="ptit-card-header">
-                  <div className="ptit-card-title">📖 CHƯƠNG TRÌNH ĐÀO TẠO KỸ SƯ AN TOÀN THÔNG TIN</div>
+                  <div className="ptit-card-title">CHƯƠNG TRÌNH ĐÀO TẠO KỸ SƯ AN TOÀN THÔNG TIN</div>
                 </div>
                 <p style={{ color: "#475569", fontSize: "0.85rem", lineHeight: 1.6 }}>
-                  Ngành đào tạo: <strong>An toàn thông tin (7480202)</strong> • Khoa: An toàn thông tin • Khóa: D23CQAT • Tổng tín chỉ yêu cầu: 152 tín chỉ.
+                  Ngành đào tạo: <strong>An toàn thông tin (7480202)</strong> • Khoa: An toàn thông tin • Khóa: D23CQAT • Tổng tín chỉ: 152 tín chỉ.
                 </p>
-                <div style={{ marginTop: "1rem", padding: "1rem", background: "#f8fafc", borderRadius: "8px", fontSize: "0.82rem" }}>
-                  💡 Điểm các học phần cơ sở ngành (Cơ sở dữ liệu, C++) đã được ghi nhận vào sổ điểm điện tử được bảo vệ bởi Blockchain.
+                <div style={{ marginTop: "1rem", padding: "1rem", background: "#f8fafc", borderRadius: "8px", fontSize: "0.82rem", color: "#64748b" }}>
+                  Các học phần trong chương trình được cập nhật định kỳ theo khung đào tạo của Học viện.
                 </div>
               </div>
             )}
@@ -160,7 +160,7 @@ export const App: React.FC = () => {
             {activeTab === "timetable" && (
               <div className="ptit-card">
                 <div className="ptit-card-header">
-                  <div className="ptit-card-title">📅 THỜI KHÓA BIỂU TUẦN HIỆN TẠI</div>
+                  <div className="ptit-card-title">THỜI KHÓA BIỂU TUẦN HIỆN TẠI</div>
                 </div>
                 <div style={{ padding: "1.5rem", textAlign: "center", color: "#64748b", fontSize: "0.88rem" }}>
                   Học kỳ 1 năm học 2025-2026 • Lớp D23CQAT01-B: Đã hoàn thành các đợt thi kết thúc học phần.
@@ -171,10 +171,10 @@ export const App: React.FC = () => {
             {activeTab === "tuition" && (
               <div className="ptit-card">
                 <div className="ptit-card-header">
-                  <div className="ptit-card-title">💳 THÔNG TIN HỌC PHÍ & HÓA ĐƠN ĐIỆN TỬ</div>
+                  <div className="ptit-card-title">THÔNG TIN HỌC PHÍ & HÓA ĐƠN ĐIỆN TỬ</div>
                 </div>
                 <div style={{ padding: "1.5rem", textAlign: "center", color: "#059669", fontSize: "0.95rem", fontWeight: 600 }}>
-                  ✅ Sinh viên đã hoàn thành 100% học phí Học kỳ 1 năm học 2025-2026.
+                  Sinh viên đã hoàn thành học phí Học kỳ 1 năm học 2025-2026.
                 </div>
               </div>
             )}
@@ -191,7 +191,7 @@ export const App: React.FC = () => {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h3 style={{ color: "var(--primary-ptit)", fontSize: "1.05rem" }}>
-                🔔 Thông báo mới nhất
+                Thông báo mới
               </h3>
               <button
                 className="btn btn-outline btn-sm"

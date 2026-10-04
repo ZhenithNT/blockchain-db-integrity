@@ -66,7 +66,7 @@ export const CreateChangeRequestModal: React.FC<CreateChangeRequestModalProps> =
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3 style={{ color: "var(--primary-ptit)", fontSize: "1.05rem" }}>
-            Đề xuất điều chỉnh điểm (Sau khóa sổ)
+            Tạo yêu cầu điều chỉnh điểm
           </h3>
           <button className="btn btn-outline btn-sm" onClick={onClose}>
             ✕ Đóng
@@ -130,16 +130,16 @@ export const CreateChangeRequestModal: React.FC<CreateChangeRequestModalProps> =
             </div>
 
             <div style={{ background: "var(--accent-rose)", padding: "0.65rem 0.85rem", borderRadius: "6px", fontSize: "0.85rem", display: "flex", justifyContent: "space-between" }}>
-              <span>Điểm tổng kết đề xuất mới:</span>
+              <span>Điểm tổng kết mới (dự kiến):</span>
               <strong style={{ color: "var(--primary-ptit)", fontSize: "1.05rem" }}>{proposedTotal}</strong>
             </div>
 
             <div className="form-group">
-              <label className="form-label">Lý do điều chỉnh (Biên bản phúc khảo/sửa sai sót):</label>
+              <label className="form-label">Lý do điều chỉnh:</label>
               <textarea
                 className="form-textarea"
                 rows={3}
-                placeholder="Nhập lý do chi tiết..."
+                placeholder="Nhập lý do điều chỉnh hoặc số biên bản phúc khảo..."
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 required
@@ -147,11 +147,11 @@ export const CreateChangeRequestModal: React.FC<CreateChangeRequestModalProps> =
             </div>
 
             <div className="form-group">
-              <label className="form-label">Tệp đính kèm / Minh chứng:</label>
+              <label className="form-label">Tệp đính kèm minh chứng:</label>
               <input
                 type="text"
                 className="form-input"
-                placeholder="Tên tệp minh chứng hoặc URL scan..."
+                placeholder="Tên tệp minh chứng (ví dụ: bien_ban_phuc_khao.pdf)..."
                 value={attachment}
                 onChange={(e) => setAttachment(e.target.value)}
               />
@@ -163,7 +163,7 @@ export const CreateChangeRequestModal: React.FC<CreateChangeRequestModalProps> =
               Hủy
             </button>
             <button type="submit" className="btn btn-primary" disabled={submitting}>
-              {submitting ? "Đang gửi đề xuất..." : "Gửi yêu cầu phê duyệt"}
+              {submitting ? "Đang gửi..." : "Gửi yêu cầu"}
             </button>
           </div>
         </form>

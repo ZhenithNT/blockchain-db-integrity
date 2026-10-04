@@ -78,10 +78,10 @@ export const IntegrityCheckView: React.FC = () => {
           <div>
             <div className="ptit-card-title">
               <span>🔍</span>
-              <span>TRUNG TÂM KIỂM ĐỊNH TOÀN VẸN CƠ SỞ DỮ LIỆU & BLOCKCHAIN</span>
+              <span>ĐỐI SOÁT & KIỂM TRA TOÀN VẸN DỮ LIỆU</span>
             </div>
             <div style={{ color: "#64748b", fontSize: "0.82rem", marginTop: "0.25rem" }}>
-              Cơ chế kiểm định đa tầng: Tính lại băm SHA-256 động từ MySQL • So khớp với Evidence trên Smart Contract • Quét ngược tìm bản ghi bị xóa vật lý
+              Đối chiếu dữ liệu điểm hiện tại với bằng chứng niêm phong để phát hiện sai lệch hoặc mất mát dữ liệu.
             </div>
           </div>
 
@@ -91,7 +91,7 @@ export const IntegrityCheckView: React.FC = () => {
             onClick={handleRunCheckAll}
             disabled={running}
           >
-            {running ? "⏳ Đang quét toàn diện..." : "🚀 Chạy Kiểm Tra Toàn Bộ CSDL"}
+            {running ? "Đang kiểm tra..." : "Kiểm tra toàn bộ dữ liệu"}
           </button>
         </div>
 
@@ -108,21 +108,21 @@ export const IntegrityCheckView: React.FC = () => {
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.75rem" }}>
               <div>
-                <h3 style={{ fontSize: "1.05rem", fontWeight: 800, color: summary.invalid > 0 || missingRecords.length > 0 ? "var(--invalid)" : "var(--valid)" }}>
+                <h3 style={{ fontSize: "1.05rem", fontWeight: 700, color: summary.invalid > 0 || missingRecords.length > 0 ? "var(--invalid)" : "var(--valid)" }}>
                   {summary.invalid > 0 || missingRecords.length > 0
-                    ? "🚨 PHÁT HIỆN DỮ LIỆU BỊ XÂM PHẠM HOẶC KHÔNG KHỚP VỚI BLOCKCHAIN!"
-                    : "✨ TOÀN VẸN 100%: TẤT CẢ DỮ LIỆU ĐỀU KHỚP VỚI BẰNG CHỨNG ON-CHAIN"}
+                    ? "⚠️ Phát hiện dữ liệu điểm có sai lệch so với bản gốc đã niêm phong"
+                    : "✓ Tất cả dữ liệu điểm đều hợp lệ và toàn vẹn"}
                 </h3>
                 <div style={{ fontSize: "0.82rem", color: "#334155", marginTop: "0.2rem" }}>
-                  Tổng số bản ghi: <strong>{summary.total}</strong> | Hợp lệ: <strong style={{ color: "var(--valid)" }}>{summary.valid}</strong> | Bị sửa đổi/Lỗi: <strong style={{ color: "var(--invalid)" }}>{summary.invalid}</strong> | Bị xóa vật lý trong MySQL: <strong style={{ color: "var(--invalid)" }}>{missingRecords.length}</strong>
+                  Tổng số bản ghi: <strong>{summary.total}</strong> | Hợp lệ: <strong style={{ color: "var(--valid)" }}>{summary.valid}</strong> | Sai lệch: <strong style={{ color: "var(--invalid)" }}>{summary.invalid}</strong> | Bị thiếu: <strong style={{ color: "var(--invalid)" }}>{missingRecords.length}</strong>
                 </div>
               </div>
 
               <div style={{ display: "flex", gap: "0.4rem" }}>
-                <span className="badge badge-valid">VALID: {summary.valid}</span>
-                <span className="badge badge-invalid">INVALID: {summary.invalid}</span>
+                <span className="badge badge-valid">Hợp lệ: {summary.valid}</span>
+                <span className="badge badge-invalid">Sai lệch: {summary.invalid}</span>
                 {missingRecords.length > 0 && (
-                  <span className="badge badge-invalid">MISSING IN DB: {missingRecords.length}</span>
+                  <span className="badge badge-invalid">Bị thiếu: {missingRecords.length}</span>
                 )}
               </div>
             </div>
@@ -135,20 +135,20 @@ export const IntegrityCheckView: React.FC = () => {
         <div className="ptit-card" style={{ borderLeft: "5px solid var(--invalid)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--invalid)", fontWeight: 700, marginBottom: "0.5rem" }}>
             <span>⚠️</span>
-            <span>PHÁT HIỆN BẢN GHI ĐÃ TỒN TẠI TRÊN BLOCKCHAIN NHƯNG BỊ XÓA MẤT KHỎI MYSQL (PHYSICAL DELETION)</span>
+            <span>CẢNH BÁO: PHÁT HIỆN BẢN GHI ĐÃ TỪNG XÁC THỰC NHƯNG BỊ THIẾU TRONG CƠ SỞ DỮ LIỆU</span>
           </div>
           <p style={{ fontSize: "0.82rem", color: "#475569", marginBottom: "0.75rem" }}>
-            Kẻ tấn công có quyền root DB đã xóa trực tiếp hàng trong bảng <code>scores</code>. Cơ chế đối soát ngược từ hàm <code>getAllRecordKeys()</code> của Smart Contract đã phát hiện:
+            Các bản ghi dưới đây từng được xác thực và niêm phong trong hệ thống nhưng hiện không còn tồn tại trong bảng điểm:
           </p>
 
           <div className="ptit-table-container">
             <table className="ptit-table">
               <thead>
                 <tr>
-                  <th>Record Key trên Blockchain</th>
-                  <th>Phiên bản on-chain</th>
-                  <th>Hash trên Blockchain</th>
-                  <th>Hành động cuối</th>
+                  <th>Mã định danh bản ghi (Record Key)</th>
+                  <th style={{ textAlign: "center" }}>Phiên bản</th>
+                  <th>Mã băm gốc</th>
+                  <th>Thao tác cuối</th>
                   <th>Chẩn đoán</th>
                 </tr>
               </thead>
@@ -156,7 +156,7 @@ export const IntegrityCheckView: React.FC = () => {
                 {missingRecords.map((m, i) => (
                   <tr key={i}>
                     <td className="mono" style={{ fontSize: "0.75rem" }}>{m.recordKey}</td>
-                    <td style={{ textAlign: "center", fontWeight: 700 }}>Version {m.blockchainVersion}</td>
+                    <td style={{ textAlign: "center", fontWeight: 700 }}>v{m.blockchainVersion}</td>
                     <td className="mono" style={{ fontSize: "0.75rem", color: "var(--invalid)" }}>{m.blockchainHash}</td>
                     <td><span className="badge badge-pending">{m.blockchainAction}</span></td>
                     <td style={{ color: "var(--invalid)", fontWeight: 600, fontSize: "0.8rem" }}>{m.error}</td>
@@ -174,7 +174,7 @@ export const IntegrityCheckView: React.FC = () => {
           <div className="ptit-card-header">
             <div className="ptit-card-title">
               <span>📋</span>
-              <span>KẾT QUẢ ĐỐI SOÁT CHI TIẾT THEO TỪNG BẢN GHI ({results.length} bản ghi)</span>
+              <span>KẾT QUẢ ĐỐI SOÁT CHI TIẾT ({results.length} bản ghi)</span>
             </div>
           </div>
 
@@ -198,7 +198,7 @@ export const IntegrityCheckView: React.FC = () => {
                       <strong style={{ fontSize: "0.95rem", color: "var(--primary-ptit)" }}>
                         {r.studentId}
                       </strong>{" "}
-                      — Môn: <strong>{r.courseCode}</strong> | Kỳ: <strong>{r.semester}</strong> | Điểm CSDL: <strong>{r.databaseScore}</strong> (Version {r.databaseVersion})
+                      — Môn: <strong>{r.courseCode}</strong> | Kỳ: <strong>{r.semester}</strong> | Điểm: <strong>{r.databaseScore}</strong> (Phiên bản v{r.databaseVersion})
                     </div>
                     <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
                       {!isOk && (
@@ -215,13 +215,13 @@ export const IntegrityCheckView: React.FC = () => {
                           }}
                           onClick={() => handleRestoreRecord(r.scoreId)}
                           disabled={restoringId === r.scoreId}
-                          title="Tự động khôi phục dữ liệu từ phiên bản chuẩn được Blockchain xác thực"
+                          title="Khôi phục điểm về phiên bản hợp lệ gần nhất"
                         >
-                          {restoringId === r.scoreId ? "⏳ Đang khôi phục..." : "🔄 Khôi phục từ Blockchain"}
+                          {restoringId === r.scoreId ? "Đang khôi phục..." : "Khôi phục dữ liệu gốc"}
                         </button>
                       )}
                       <span className={`badge ${isOk ? "badge-valid" : "badge-invalid"}`}>
-                        {r.result} {r.reason ? `(${r.reason})` : ""}
+                        {isOk ? "Hợp lệ" : "Sai lệch"} {r.reason ? `(${r.reason === "HASH_MISMATCH" ? "Mã băm không khớp" : r.reason})` : ""}
                       </span>
                     </div>
                   </div>
@@ -233,16 +233,16 @@ export const IntegrityCheckView: React.FC = () => {
                   {/* Hash Comparison Box */}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.6rem", marginTop: "0.65rem", fontSize: "0.75rem" }}>
                     <div style={{ background: "#f8fafc", padding: "0.5rem 0.65rem", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
-                      <span style={{ color: "#64748b", fontWeight: 600 }}>Database Hash (Tính lại từ các cột trong MySQL):</span>
+                      <span style={{ color: "#64748b", fontWeight: 600 }}>Mã băm dữ liệu hiện tại (SHA-256):</span>
                       <div className="mono" style={{ color: "#1e293b", wordBreak: "break-all", marginTop: "0.15rem" }}>
                         {r.databaseHash}
                       </div>
                     </div>
 
                     <div style={{ background: "#f8fafc", padding: "0.5rem 0.65rem", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
-                      <span style={{ color: "#64748b", fontWeight: 600 }}>Blockchain Hash (Lấy từ Smart Contract):</span>
+                      <span style={{ color: "#64748b", fontWeight: 600 }}>Mã băm gốc đã niêm phong:</span>
                       <div className="mono" style={{ color: isOk ? "var(--valid)" : "var(--invalid)", wordBreak: "break-all", marginTop: "0.15rem", fontWeight: 700 }}>
-                        {r.blockchainHash || "Chưa có bằng chứng trên Blockchain"}
+                        {r.blockchainHash || "Chưa có bằng chứng niêm phong"}
                       </div>
                     </div>
                   </div>
@@ -251,7 +251,7 @@ export const IntegrityCheckView: React.FC = () => {
                   {r.historyChecks && r.historyChecks.length > 0 && (
                     <div style={{ marginTop: "0.65rem", paddingTop: "0.65rem", borderTop: "1px dashed #e2e8f0", fontSize: "0.78rem" }}>
                       <div style={{ fontWeight: 600, color: "#475569", marginBottom: "0.3rem" }}>
-                        Chuỗi xác thực các phiên bản lịch sử (Level 2 Deep Check):
+                        Lịch sử kiểm tra các phiên bản:
                       </div>
                       <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
                         {r.historyChecks.map((h) => (
@@ -259,9 +259,9 @@ export const IntegrityCheckView: React.FC = () => {
                             key={h.version}
                             className={`badge ${h.matches ? "badge-valid" : "badge-invalid"}`}
                             style={{ fontSize: "0.72rem" }}
-                            title={`DB Hash: ${h.databaseHash}\nChain Hash: ${h.blockchainHash || "N/A"}`}
+                            title={`Mã băm hiện tại: ${h.databaseHash}\nMã băm gốc: ${h.blockchainHash || "N/A"}`}
                           >
-                            v{h.version}: {h.matches ? "KHỚP" : "GIẢ MẠO"} ({h.databaseAction})
+                            v{h.version}: {h.matches ? "Khớp" : "Sai lệch"} ({h.databaseAction})
                           </span>
                         ))}
                       </div>
@@ -279,15 +279,15 @@ export const IntegrityCheckView: React.FC = () => {
         <div className="ptit-card-header">
           <div className="ptit-card-title">
             <span>🕒</span>
-            <span>NHẬT KÝ ĐỐI SOÁT CƠ SỞ DỮ LIỆU (BẢNG INTEGRITY_CHECKS)</span>
+            <span>LỊCH SỬ CÁC LẦN KIỂM TRA TOÀN VẸN</span>
           </div>
           <button className="btn btn-outline btn-sm" onClick={loadHistory}>
-            Làm mới nhật ký
+            Làm mới
           </button>
         </div>
 
         {loadingHistory ? (
-          <div style={{ textAlign: "center", padding: "2rem", color: "#64748b" }}>Đang tải nhật ký...</div>
+          <div style={{ textAlign: "center", padding: "2rem", color: "#64748b" }}>Đang tải lịch sử...</div>
         ) : recentChecks.length === 0 ? (
           <div style={{ textAlign: "center", padding: "2rem", color: "#9ca3af", fontStyle: "italic" }}>
             Chưa có lần kiểm tra nào được lưu trữ.
@@ -297,12 +297,12 @@ export const IntegrityCheckView: React.FC = () => {
             <table className="ptit-table">
               <thead>
                 <tr>
-                  <th>Thời gian kiểm</th>
-                  <th>Sinh viên</th>
-                  <th>Môn học</th>
+                  <th>Thời gian kiểm tra</th>
+                  <th>Mã sinh viên</th>
+                  <th>Mã môn</th>
                   <th>Điểm</th>
-                  <th>Hash CSDL</th>
-                  <th>Hash Blockchain</th>
+                  <th>Mã băm hiện tại</th>
+                  <th>Mã băm gốc</th>
                   <th style={{ textAlign: "center" }}>Kết quả</th>
                 </tr>
               </thead>
@@ -325,7 +325,7 @@ export const IntegrityCheckView: React.FC = () => {
                       <span
                         className={`badge ${c.result === "VALID" ? "badge-valid" : "badge-invalid"}`}
                       >
-                        {c.result}
+                        {c.result === "VALID" ? "Hợp lệ" : "Sai lệch"}
                       </span>
                     </td>
                   </tr>

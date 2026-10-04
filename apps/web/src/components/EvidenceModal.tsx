@@ -38,9 +38,8 @@ export const EvidenceModal: React.FC<EvidenceModalProps> = ({
       <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "720px" }}>
         <div className="modal-header">
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <span style={{ fontSize: "1.2rem" }}>⛓️</span>
             <h3 style={{ color: "var(--primary-ptit)", fontSize: "1.05rem" }}>
-              Bằng chứng Toàn vẹn Blockchain (On-chain Evidence)
+              Chi tiết xác thực toàn vẹn dữ liệu
             </h3>
           </div>
           <button className="btn btn-outline btn-sm" onClick={onClose}>
@@ -82,7 +81,7 @@ export const EvidenceModal: React.FC<EvidenceModalProps> = ({
           <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
             <div>
               <label style={{ fontSize: "0.78rem", fontWeight: 700, color: "#475569" }}>
-                Record Key (Định danh bản ghi duy nhất trên Smart Contract):
+                Mã định danh bản ghi (Record Key):
               </label>
               <div
                 className="mono"
@@ -101,7 +100,7 @@ export const EvidenceModal: React.FC<EvidenceModalProps> = ({
 
             <div>
               <label style={{ fontSize: "0.78rem", fontWeight: 700, color: "#475569" }}>
-                SHA-256 Data Hash (Mã băm chuẩn hóa toàn bộ dữ liệu điểm):
+                Mã băm dữ liệu (Data Hash):
               </label>
               <div
                 className="mono"
@@ -121,7 +120,7 @@ export const EvidenceModal: React.FC<EvidenceModalProps> = ({
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
               <div>
                 <label style={{ fontSize: "0.78rem", fontWeight: 700, color: "#475569" }}>
-                  Trạng thái Blockchain:
+                  Trạng thái xác thực:
                 </label>
                 <div style={{ marginTop: "0.2rem" }}>
                   <span
@@ -133,24 +132,24 @@ export const EvidenceModal: React.FC<EvidenceModalProps> = ({
                         : "badge-pending"
                     }`}
                   >
-                    {score.blockchainStatus === "CONFIRMED" ? "✅ ĐÃ NEO SMART CONTRACT" : score.blockchainStatus || "CHƯA NEO"}
+                    {score.blockchainStatus === "CONFIRMED" ? "Đã xác thực" : score.blockchainStatus || "Chờ xác thực"}
                   </span>
                 </div>
               </div>
 
               <div>
                 <label style={{ fontSize: "0.78rem", fontWeight: 700, color: "#475569" }}>
-                  Phiên bản điểm (Version):
+                  Phiên bản dữ liệu:
                 </label>
                 <div style={{ fontWeight: 700, fontSize: "0.9rem", color: "#1e293b", marginTop: "0.2rem" }}>
-                  Version {score.version || 1}
+                  Phiên bản {score.version || 1}
                 </div>
               </div>
             </div>
 
             <div>
               <label style={{ fontSize: "0.78rem", fontWeight: 700, color: "#475569" }}>
-                Transaction Hash (Giao dịch ghi bằng chứng trên Hardhat node):
+                Mã giao dịch xác thực (Transaction Hash):
               </label>
               <div
                 className="mono"
@@ -164,7 +163,7 @@ export const EvidenceModal: React.FC<EvidenceModalProps> = ({
                   color: "#0284c7",
                 }}
               >
-                {score.latestTxHash || "Giao dịch đang chờ xác nhận hoặc chưa gửi lên chain"}
+                {score.latestTxHash || "Chưa có giao dịch"}
               </div>
             </div>
           </div>
@@ -179,14 +178,14 @@ export const EvidenceModal: React.FC<EvidenceModalProps> = ({
           >
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.6rem" }}>
               <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "#334155" }}>
-                Đối soát trực tiếp CSDL MySQL vs Blockchain:
+                Đối soát trực tiếp dữ liệu:
               </span>
               <button
                 className="btn btn-primary btn-sm"
                 onClick={handleRunVerify}
                 disabled={checking || !score.scoreId}
               >
-                {checking ? "Đang đối soát..." : "⚡ Xác thực ngay"}
+                {checking ? "Đang kiểm tra..." : "Kiểm tra ngay"}
               </button>
             </div>
 
@@ -208,7 +207,7 @@ export const EvidenceModal: React.FC<EvidenceModalProps> = ({
               >
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.4rem" }}>
                   <strong style={{ color: checkResult.result === "VALID" ? "var(--valid)" : "var(--invalid)" }}>
-                    KẾT QUẢ ĐỐI SOÁT: {checkResult.result}
+                    KẾT QUẢ KIỂM TRA: {checkResult.result === "VALID" ? "HỢP LỆ" : "SAI LỆCH"}
                   </strong>
                   <span style={{ fontSize: "0.72rem", color: "#64748b" }}>{checkResult.checkedAt}</span>
                 </div>

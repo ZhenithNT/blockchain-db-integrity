@@ -48,7 +48,6 @@ export const AnnouncementView: React.FC<AnnouncementViewProps> = ({
       {/* Header matching screenshot */}
       <div className="ptit-card-header">
         <div className="ptit-card-title">
-          <span>🔔</span>
           <span>THÔNG BÁO</span>
         </div>
       </div>
@@ -134,10 +133,10 @@ export const AnnouncementView: React.FC<AnnouncementViewProps> = ({
             </div>
             <div className="modal-footer">
               <button
-                className="btn btn-primary"
+                className="btn btn-outline"
                 onClick={() => setSelectedItem(null)}
               >
-                Đã hiểu
+                Đóng
               </button>
             </div>
           </div>

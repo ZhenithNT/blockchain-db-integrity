@@ -231,53 +231,51 @@ export const AcademicManagementView: React.FC<AcademicManagementViewProps> = ({ 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
           <div>
             <div className="ptit-card-title">
-              <span>🏛️</span>
-              <span>QUẢN LÝ ĐÀO TẠO & HỌC VỤ (ADMIN)</span>
+              <span>QUẢN LÝ ĐÀO TẠO & HỌC VỤ</span>
             </div>
             <div style={{ fontSize: "0.82rem", color: "#64748b", marginTop: "0.25rem" }}>
-              Nghiệp vụ: Quản lý danh mục Giảng viên, Sinh viên, Môn học, Lớp học phần và Phân công giảng dạy
+              Quản lý danh mục môn học, lớp học phần, giảng viên và sinh viên.
             </div>
           </div>
 
           {/* Quick Refresh */}
           <button className="btn btn-outline btn-sm" onClick={loadAll} disabled={loading}>
-            🔄 Tải lại dữ liệu
+            Làm mới
           </button>
         </div>
       </div>
 
       {error && (
         <div style={{ background: "var(--invalid-bg)", border: "1px solid var(--invalid-border)", color: "var(--invalid)", padding: "0.85rem", borderRadius: "8px", fontSize: "0.85rem" }}>
-          ⚠️ {error}
+          {error}
         </div>
       )}
 
       {success && (
         <div style={{ background: "var(--valid-bg)", border: "1px solid var(--valid-border)", color: "var(--valid)", padding: "0.85rem", borderRadius: "8px", fontSize: "0.85rem" }}>
-          ✓ {success}
+          {success}
         </div>
       )}
 
       {/* Onboarding Guide if DB is completely fresh */}
       {courses.length === 0 && (
         <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", padding: "1rem", borderRadius: "8px", fontSize: "0.85rem", color: "#1e40af" }}>
-          <div style={{ fontWeight: 700, fontSize: "0.95rem", marginBottom: "0.35rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <span>🚀</span>
-            <span>Hệ thống CSDL đang trắng tinh (Sẵn sàng nhập mới)!</span>
+          <div style={{ fontWeight: 700, fontSize: "0.95rem", marginBottom: "0.35rem" }}>
+            Chưa có dữ liệu danh mục đào tạo
           </div>
           <div style={{ color: "#1e3a8a", lineHeight: 1.5 }}>
-            Để bắt đầu khởi tạo dữ liệu đào tạo, vui lòng thực hiện theo 3 bước:
+            Hướng dẫn các bước khởi tạo dữ liệu:
             <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.5rem", flexWrap: "wrap", alignItems: "center" }}>
               <span className="badge" style={{ background: "#dbeafe", color: "#1e40af", padding: "0.4rem 0.6rem", fontWeight: 700 }}>
-                1. Thêm Môn Học (Tab Môn Học)
+                1. Thêm môn học
               </span>
               <span style={{ color: "#94a3b8" }}>➔</span>
               <span className="badge" style={{ background: "#dbeafe", color: "#1e40af", padding: "0.4rem 0.6rem", fontWeight: 700 }}>
-                2. Thêm Giảng Viên & Sinh Viên
+                2. Thêm giảng viên & sinh viên
               </span>
               <span style={{ color: "#94a3b8" }}>➔</span>
               <span className="badge" style={{ background: "#dbeafe", color: "#1e40af", padding: "0.4rem 0.6rem", fontWeight: 700 }}>
-                3. Mở Lớp Học Phần & Gán GV/SV
+                3. Mở lớp học phần và gán sinh viên
               </span>
             </div>
           </div>
@@ -290,25 +288,25 @@ export const AcademicManagementView: React.FC<AcademicManagementViewProps> = ({ 
           className={`btn ${activeSubTab === "COURSES" ? "btn-primary" : "btn-outline"}`}
           onClick={() => { setActiveSubTab("COURSES"); setError(null); setSuccess(null); }}
         >
-          📖 Môn Học ({courses.length})
+          Môn học ({courses.length})
         </button>
         <button
           className={`btn ${activeSubTab === "OFFERINGS" ? "btn-primary" : "btn-outline"}`}
           onClick={() => { setActiveSubTab("OFFERINGS"); setError(null); setSuccess(null); }}
         >
-          📚 Lớp Học Phần ({offerings.length})
+          Lớp học phần ({offerings.length})
         </button>
         <button
           className={`btn ${activeSubTab === "LECTURERS" ? "btn-primary" : "btn-outline"}`}
           onClick={() => { setActiveSubTab("LECTURERS"); setError(null); setSuccess(null); }}
         >
-          👨‍🏫 Giảng Viên ({lecturers.length})
+          Giảng viên ({lecturers.length})
         </button>
         <button
           className={`btn ${activeSubTab === "STUDENTS" ? "btn-primary" : "btn-outline"}`}
           onClick={() => { setActiveSubTab("STUDENTS"); setError(null); setSuccess(null); }}
         >
-          🎓 Sinh Viên ({students.length})
+          Sinh viên ({students.length})
         </button>
       </div>
 
@@ -316,9 +314,9 @@ export const AcademicManagementView: React.FC<AcademicManagementViewProps> = ({ 
       {activeSubTab === "OFFERINGS" && (
         <div className="ptit-card">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-            <h3 style={{ fontSize: "1rem", fontWeight: 700 }}>Danh sách Lớp Học Phần Đã Mở</h3>
+            <h3 style={{ fontSize: "1rem", fontWeight: 700 }}>Danh sách lớp học phần ({offerings.length})</h3>
             <button className="btn btn-primary btn-sm" onClick={() => setShowCreateOfferingModal(true)}>
-              ➕ Mở Lớp Học Phần Mới
+              Mở lớp học phần
             </button>
           </div>
 
@@ -341,20 +339,19 @@ export const AcademicManagementView: React.FC<AcademicManagementViewProps> = ({ 
                 {offerings.length === 0 ? (
                   <tr>
                     <td colSpan={9} style={{ textAlign: "center", padding: "2.5rem 1rem", color: "#64748b" }}>
-                      <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>📚</div>
                       <div style={{ fontWeight: 600, color: "#1e293b", marginBottom: "0.25rem" }}>Chưa có lớp học phần nào được mở</div>
                       <div style={{ fontSize: "0.85rem", marginBottom: "1rem" }}>
                         {courses.length === 0 
-                          ? "Lưu ý: Bạn cần tạo ít nhất 1 Môn học trước khi có thể mở lớp học phần." 
-                          : "Bấm nút bên dưới để mở lớp học phần mới cho môn học."}
+                          ? "Bạn cần tạo ít nhất một môn học trước khi có thể mở lớp học phần." 
+                          : "Bấm nút bên dưới để mở lớp học phần mới."}
                       </div>
                       {courses.length === 0 ? (
                         <button className="btn btn-primary btn-sm" onClick={() => { setActiveSubTab("COURSES"); setShowAddCourseModal(true); }}>
-                          📖 Thêm Môn Học Trước
+                          Thêm môn học
                         </button>
                       ) : (
                         <button className="btn btn-primary btn-sm" onClick={() => setShowCreateOfferingModal(true)}>
-                          ➕ Mở Lớp Học Phần Mới
+                          Mở lớp học phần
                         </button>
                       )}
                     </td>
@@ -394,7 +391,7 @@ export const AcademicManagementView: React.FC<AcademicManagementViewProps> = ({ 
                             onClick={() => setShowAssignLecturerModal(o.id)}
                             title="Phân công giảng viên cho lớp này"
                           >
-                            👨‍🏫 Gán GV
+                            Phân công GV
                           </button>
                           <button
                             className="btn btn-outline-primary btn-sm"
@@ -402,7 +399,7 @@ export const AcademicManagementView: React.FC<AcademicManagementViewProps> = ({ 
                             onClick={() => setShowEnrollStudentModal(o.id)}
                             title="Thêm sinh viên vào lớp này"
                           >
-                            🎓 Thêm SV
+                            Thêm SV
                           </button>
                         </div>
                       </td>
@@ -419,9 +416,9 @@ export const AcademicManagementView: React.FC<AcademicManagementViewProps> = ({ 
       {activeSubTab === "LECTURERS" && (
         <div className="ptit-card">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-            <h3 style={{ fontSize: "1rem", fontWeight: 700 }}>Danh Sách Giảng Viên Học Viện</h3>
+            <h3 style={{ fontSize: "1rem", fontWeight: 700 }}>Danh sách giảng viên ({lecturers.length})</h3>
             <button className="btn btn-primary btn-sm" onClick={() => setShowAddLecturerModal(true)}>
-              ➕ Thêm Giảng Viên Mới
+              Thêm giảng viên
             </button>
           </div>
 
@@ -462,9 +459,9 @@ export const AcademicManagementView: React.FC<AcademicManagementViewProps> = ({ 
       {activeSubTab === "STUDENTS" && (
         <div className="ptit-card">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-            <h3 style={{ fontSize: "1rem", fontWeight: 700 }}>Danh Sách Sinh Viên</h3>
+            <h3 style={{ fontSize: "1rem", fontWeight: 700 }}>Danh sách sinh viên ({students.length})</h3>
             <button className="btn btn-primary btn-sm" onClick={() => setShowAddStudentModal(true)}>
-              ➕ Thêm Sinh Viên Mới
+              Thêm sinh viên
             </button>
           </div>
 
@@ -505,9 +502,9 @@ export const AcademicManagementView: React.FC<AcademicManagementViewProps> = ({ 
       {activeSubTab === "COURSES" && (
         <div className="ptit-card">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-            <h3 style={{ fontSize: "1rem", fontWeight: 700 }}>Danh Mục Môn Học</h3>
+            <h3 style={{ fontSize: "1rem", fontWeight: 700 }}>Danh mục môn học ({courses.length})</h3>
             <button className="btn btn-primary btn-sm" onClick={() => setShowAddCourseModal(true)}>
-              ➕ Thêm Môn Học Mới
+              Thêm môn học
             </button>
           </div>
 
@@ -547,7 +544,7 @@ export const AcademicManagementView: React.FC<AcademicManagementViewProps> = ({ 
         <div className="modal-overlay" onClick={() => setShowCreateOfferingModal(false)}>
           <div className="modal-content" style={{ maxWidth: "520px" }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 style={{ color: "var(--primary-ptit)" }}>📚 Mở Lớp Học Phần Mới</h3>
+              <h3 style={{ color: "var(--primary-ptit)" }}>Mở lớp học phần mới</h3>
               <button className="btn btn-outline btn-sm" onClick={() => setShowCreateOfferingModal(false)}>✕</button>
             </div>
             <form onSubmit={handleCreateOffering} style={{ display: "flex", flexDirection: "column", gap: "0.85rem", padding: "1.25rem 0" }}>
@@ -620,7 +617,7 @@ export const AcademicManagementView: React.FC<AcademicManagementViewProps> = ({ 
               </div>
 
               <button type="submit" className="btn btn-primary" style={{ marginTop: "0.5rem" }}>
-                Tạo Lớp Học Phần
+                Lưu lớp học phần
               </button>
             </form>
           </div>
@@ -632,7 +629,7 @@ export const AcademicManagementView: React.FC<AcademicManagementViewProps> = ({ 
         <div className="modal-overlay" onClick={() => setShowAddLecturerModal(false)}>
           <div className="modal-content" style={{ maxWidth: "520px" }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 style={{ color: "var(--primary-ptit)" }}>👨‍🏫 Thêm Giảng Viên Mới</h3>
+              <h3 style={{ color: "var(--primary-ptit)" }}>Thêm giảng viên mới</h3>
               <button className="btn btn-outline btn-sm" onClick={() => setShowAddLecturerModal(false)}>✕</button>
             </div>
             <form onSubmit={handleCreateLecturer} style={{ display: "flex", flexDirection: "column", gap: "0.85rem", padding: "1.25rem 0" }}>
@@ -695,7 +692,7 @@ export const AcademicManagementView: React.FC<AcademicManagementViewProps> = ({ 
               </div>
 
               <button type="submit" className="btn btn-primary" style={{ marginTop: "0.5rem" }}>
-                Tạo Hồ Sơ & Tài Khoản Giảng Viên
+                Lưu giảng viên
               </button>
             </form>
           </div>
@@ -707,7 +704,7 @@ export const AcademicManagementView: React.FC<AcademicManagementViewProps> = ({ 
         <div className="modal-overlay" onClick={() => setShowAddStudentModal(false)}>
           <div className="modal-content" style={{ maxWidth: "520px" }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 style={{ color: "var(--primary-ptit)" }}>🎓 Thêm Sinh Viên Mới</h3>
+              <h3 style={{ color: "var(--primary-ptit)" }}>Thêm sinh viên mới</h3>
               <button className="btn btn-outline btn-sm" onClick={() => setShowAddStudentModal(false)}>✕</button>
             </div>
             <form onSubmit={handleCreateStudent} style={{ display: "flex", flexDirection: "column", gap: "0.85rem", padding: "1.25rem 0" }}>
@@ -770,7 +767,7 @@ export const AcademicManagementView: React.FC<AcademicManagementViewProps> = ({ 
               </div>
 
               <button type="submit" className="btn btn-primary" style={{ marginTop: "0.5rem" }}>
-                Tạo Hồ Sơ & Tài Khoản Sinh Viên
+                Lưu sinh viên
               </button>
             </form>
           </div>
@@ -782,7 +779,7 @@ export const AcademicManagementView: React.FC<AcademicManagementViewProps> = ({ 
         <div className="modal-overlay" onClick={() => setShowAddCourseModal(false)}>
           <div className="modal-content" style={{ maxWidth: "520px" }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 style={{ color: "var(--primary-ptit)" }}>📖 Thêm Môn Học Mới</h3>
+              <h3 style={{ color: "var(--primary-ptit)" }}>Thêm môn học mới</h3>
               <button className="btn btn-outline btn-sm" onClick={() => setShowAddCourseModal(false)}>✕</button>
             </div>
             <form onSubmit={handleCreateCourse} style={{ display: "flex", flexDirection: "column", gap: "0.85rem", padding: "1.25rem 0" }}>
@@ -836,7 +833,7 @@ export const AcademicManagementView: React.FC<AcademicManagementViewProps> = ({ 
               </div>
 
               <button type="submit" className="btn btn-primary" style={{ marginTop: "0.5rem" }}>
-                Thêm Môn Học
+                Lưu môn học
               </button>
             </form>
           </div>
@@ -848,7 +845,7 @@ export const AcademicManagementView: React.FC<AcademicManagementViewProps> = ({ 
         <div className="modal-overlay" onClick={() => setShowAssignLecturerModal(null)}>
           <div className="modal-content" style={{ maxWidth: "460px" }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 style={{ color: "var(--primary-ptit)" }}>👨‍🏫 Phân Công Giảng Viên</h3>
+              <h3 style={{ color: "var(--primary-ptit)" }}>Phân công giảng viên</h3>
               <button className="btn btn-outline btn-sm" onClick={() => setShowAssignLecturerModal(null)}>✕</button>
             </div>
             <div style={{ padding: "1.25rem 0", display: "flex", flexDirection: "column", gap: "1rem" }}>
@@ -871,7 +868,7 @@ export const AcademicManagementView: React.FC<AcademicManagementViewProps> = ({ 
                 className="btn btn-primary"
                 onClick={() => handleAssignLecturer(showAssignLecturerModal)}
               >
-                Xác Nhận Phân Công
+                Xác nhận phân công
               </button>
             </div>
           </div>
@@ -883,7 +880,7 @@ export const AcademicManagementView: React.FC<AcademicManagementViewProps> = ({ 
         <div className="modal-overlay" onClick={() => setShowEnrollStudentModal(null)}>
           <div className="modal-content" style={{ maxWidth: "460px" }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 style={{ color: "var(--primary-ptit)" }}>🎓 Thêm Sinh Viên Vào Lớp</h3>
+              <h3 style={{ color: "var(--primary-ptit)" }}>Thêm sinh viên vào lớp</h3>
               <button className="btn btn-outline btn-sm" onClick={() => setShowEnrollStudentModal(null)}>✕</button>
             </div>
             <div style={{ padding: "1.25rem 0", display: "flex", flexDirection: "column", gap: "1rem" }}>
@@ -906,7 +903,7 @@ export const AcademicManagementView: React.FC<AcademicManagementViewProps> = ({ 
                 className="btn btn-primary"
                 onClick={() => handleEnrollStudent(showEnrollStudentModal)}
               >
-                Ghi Danh Vào Lớp Học Phần
+                Ghi danh vào lớp
               </button>
             </div>
           </div>

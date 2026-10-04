@@ -75,29 +75,28 @@ export const CourseRegistrationView: React.FC<CourseRegistrationViewProps> = ({ 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
           <div>
             <div className="ptit-card-title">
-              <span>📝</span>
-              <span>CỔNG ĐĂNG KÝ HỌC PHẦN TRỰC TUYẾN</span>
+              <span>ĐĂNG KÝ HỌC PHẦN</span>
             </div>
             <div style={{ fontSize: "0.82rem", color: "#64748b", marginTop: "0.25rem" }}>
-              Sinh viên: <strong>{user.fullName}</strong> ({user.studentCode || user.username}) • Chọn các lớp học phần đang mở để ghi danh vào sổ điểm
+              Sinh viên: <strong>{user.fullName}</strong> ({user.studentCode || user.username}) • Lựa chọn các lớp học phần trong học kỳ.
             </div>
           </div>
 
           <button className="btn btn-outline btn-sm" onClick={loadData} disabled={loading}>
-            🔄 Tải lại danh sách
+            Làm mới
           </button>
         </div>
       </div>
 
       {error && (
         <div style={{ background: "var(--invalid-bg)", border: "1px solid var(--invalid-border)", color: "var(--invalid)", padding: "0.85rem", borderRadius: "8px", fontSize: "0.85rem" }}>
-          ⚠️ {error}
+          {error}
         </div>
       )}
 
       {success && (
         <div style={{ background: "var(--valid-bg)", border: "1px solid var(--valid-border)", color: "var(--valid)", padding: "0.85rem", borderRadius: "8px", fontSize: "0.85rem" }}>
-          ✓ {success}
+          {success}
         </div>
       )}
 
@@ -105,8 +104,7 @@ export const CourseRegistrationView: React.FC<CourseRegistrationViewProps> = ({ 
       <div className="ptit-card">
         <div className="ptit-card-header">
           <div className="ptit-card-title">
-            <span>📚</span>
-            <span>DANH SÁCH LỚP HỌC PHẦN ĐANG MỞ ĐĂNG KÝ</span>
+            <span>DANH SÁCH LỚP HỌC PHẦN MỞ ĐĂNG KÝ</span>
           </div>
         </div>
 
@@ -121,7 +119,7 @@ export const CourseRegistrationView: React.FC<CourseRegistrationViewProps> = ({ 
                 <th>Học Kỳ</th>
                 <th>Giảng Viên</th>
                 <th>Phòng Học</th>
-                <th style={{ textAlign: "center" }}>Sĩ Số (Đã ĐK / Tối Đa)</th>
+                <th style={{ textAlign: "center" }}>Sĩ Số</th>
                 <th style={{ textAlign: "center" }}>Trạng Thái</th>
                 <th style={{ textAlign: "center", width: "160px" }}>Thao Tác</th>
               </tr>
@@ -173,11 +171,11 @@ export const CourseRegistrationView: React.FC<CourseRegistrationViewProps> = ({ 
                       </td>
                       <td style={{ textAlign: "center" }}>
                         {isEnrolled ? (
-                          <span className="badge badge-valid">✓ ĐÃ ĐĂNG KÝ</span>
+                          <span className="badge badge-valid">Đã đăng ký</span>
                         ) : isFull ? (
-                          <span className="badge badge-invalid">ĐÃ ĐẦY LỚP</span>
+                          <span className="badge badge-invalid">Đã đầy</span>
                         ) : (
-                          <span className="badge badge-pending">CÒN CHỖ</span>
+                          <span className="badge badge-pending">Còn chỗ</span>
                         )}
                       </td>
                       <td style={{ textAlign: "center" }}>
@@ -188,7 +186,7 @@ export const CourseRegistrationView: React.FC<CourseRegistrationViewProps> = ({ 
                             onClick={() => handleUnenroll(o.id, o.offeringCode)}
                             disabled={isActionLoading}
                           >
-                            {isActionLoading ? "Đang xử lý..." : "❌ Hủy Đăng Ký"}
+                            {isActionLoading ? "Đang xử lý..." : "Hủy đăng ký"}
                           </button>
                         ) : (
                           <button
@@ -196,7 +194,7 @@ export const CourseRegistrationView: React.FC<CourseRegistrationViewProps> = ({ 
                             onClick={() => handleEnroll(o.id, o.offeringCode)}
                             disabled={isFull || isActionLoading}
                           >
-                            {isActionLoading ? "Đang xử lý..." : "📝 Đăng Ký Học"}
+                            {isActionLoading ? "Đang xử lý..." : "Đăng ký"}
                           </button>
                         )}
                       </td>

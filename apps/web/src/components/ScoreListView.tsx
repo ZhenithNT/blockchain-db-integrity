@@ -65,18 +65,18 @@ export const ScoreListView: React.FC<ScoreListViewProps> = ({
   };
 
   const handleDelete = async (score: Score) => {
-    if (!confirm(`Xác nhận xóa (Soft-delete) điểm môn ${score.courseCode} của sinh viên ${score.studentId}? Thao tác này sẽ neo sự kiện DELETE lên Blockchain!`)) {
+    if (!confirm(`Xác nhận xóa điểm môn ${score.courseCode} của sinh viên ${score.studentId}?`)) {
       return;
     }
 
     setDeletingId(score.id);
     setMessage(null);
     try {
-      const res = await api.deleteScore(score.id);
-      setMessage(`✓ Đã soft-delete thành công! Tx: ${res.transactionHash}`);
+      await api.deleteScore(score.id);
+      setMessage(`Đã xóa điểm môn ${score.courseCode} của sinh viên ${score.studentId}.`);
       await loadScores();
     } catch (err: any) {
-      setMessage(`Lỗi xóa: ${err.message}`);
+      setMessage(`Không thể xóa: ${err.message}`);
     } finally {
       setDeletingId(null);
     }
@@ -87,51 +87,82 @@ export const ScoreListView: React.FC<ScoreListViewProps> = ({
       {/* Header & Actions */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
         <div>
-          <h1 style={{ fontSize: "1.5rem", fontWeight: 800 }}>Quản Lý Điểm Sinh Viên</h1>
-          <p style={{ color: "#94a3b8", fontSize: "0.85rem" }}>
-            Dữ liệu điểm được lưu trữ trong CSDL MySQL và neo mã băm toàn vẹn trên Blockchain
+          <h1 style={{ fontSize: "1.35rem", fontWeight: 700 }}>Quản lý điểm sinh viên</h1>
+          <p style={{ color: "#64748b", fontSize: "0.85rem" }}>
+            Danh sách điểm học phần đã ghi nhận trong hệ thống đào tạo
           </p>
         </div>
 
         {canEdit && (
           <button className="btn btn-primary" onClick={onAddScore}>
-            ➕ Thêm Bản Ghi Điểm
+            ➕ Thêm điểm
           </button>
         )}
       </div>
 
       {message && (
-        <div style={{ background: "#1e293b", border: "1px solid #3b82f6", color: "#93c5fd", padding: "0.75rem 1rem", borderRadius: "8px", fontSize: "0.875rem" }}>
-          ℹ️ {message}
+        <div
+          style={{
+            background:
+              message.includes("VALID") || message.includes("Hợp lệ")
+                ? "var(--valid-bg)"
+                : message.includes("INVALID") || message.includes("Sai lệch") || message.includes("Lỗi")
+                ? "var(--invalid-bg)"
+                : "var(--info-bg)",
+            border: `1px solid ${
+              message.includes("VALID") || message.includes("Hợp lệ")
+                ? "var(--valid-border)"
+                : message.includes("INVALID") || message.includes("Sai lệch") || message.includes("Lỗi")
+                ? "var(--invalid-border)"
+                : "var(--info-border)"
+            }`,
+            color:
+              message.includes("VALID") || message.includes("Hợp lệ")
+                ? "var(--valid)"
+                : message.includes("INVALID") || message.includes("Sai lệch") || message.includes("Lỗi")
+                ? "var(--invalid)"
+                : "var(--info)",
+            padding: "0.85rem 1rem",
+            borderRadius: "8px",
+            fontSize: "0.875rem",
+            fontWeight: 600,
+          }}
+        >
+          {message.includes("VALID") || message.includes("Hợp lệ")
+            ? "✓ "
+            : message.includes("INVALID") || message.includes("Sai lệch") || message.includes("Lỗi")
+            ? "⚠️ "
+            : "ℹ️ "}
+          {message}
         </div>
       )}
 
       {/* Filters bar */}
-      <div className="card" style={{ padding: "1rem" }}>
-        <form onSubmit={handleSearchSubmit} style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "center" }}>
+      <div className="ptit-card" style={{ padding: "1rem", marginBottom: 0 }}>
+        <form onSubmit={handleSearchSubmit} style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "center" }}>
           <div style={{ flex: "1 1 240px" }}>
             <input
               type="text"
-              className="input-field"
-              placeholder="🔍 Tìm theo Mã SV, Mã môn, Học kỳ..."
+              className="ptit-input"
+              placeholder="Tìm theo Mã SV, Mã môn, Học kỳ..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
 
-          <div style={{ width: "160px" }}>
+          <div style={{ width: "180px" }}>
             <select
-              className="input-field"
+              className="ptit-select"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
               <option value="ALL">Tất cả trạng thái</option>
-              <option value="ACTIVE">Chỉ bản ghi ACTIVE</option>
+              <option value="ACTIVE">Đang dùng (ACTIVE)</option>
               <option value="DELETED">Đã xóa (DELETED)</option>
             </select>
           </div>
 
-          <button type="submit" className="btn btn-outline btn-sm">
+          <button type="submit" className="btn btn-primary btn-sm">
             Tìm kiếm
           </button>
 
@@ -151,73 +182,74 @@ export const ScoreListView: React.FC<ScoreListViewProps> = ({
       </div>
 
       {/* Table */}
-      <div className="table-container">
-        <table>
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Mã SV</th>
-              <th>Mã Môn</th>
-              <th>Học Kỳ</th>
-              <th>Điểm Số</th>
-              <th>Version</th>
-              <th>Trạng Thái</th>
-              <th>Toàn Vẹn Blockchain</th>
-              <th>Hành Động</th>
-            </tr>
-          </thead>
+      <div className="ptit-card">
+        <div className="ptit-table-container">
+          <table className="ptit-table">
+            <thead>
+              <tr>
+                <th style={{ width: "50px", textAlign: "center" }}>STT</th>
+                <th>Mã sinh viên</th>
+                <th>Mã môn</th>
+                <th>Học kỳ</th>
+                <th style={{ textAlign: "center" }}>Điểm</th>
+                <th style={{ textAlign: "center" }}>Lần sửa</th>
+                <th style={{ textAlign: "center" }}>Trạng thái</th>
+                <th style={{ textAlign: "center" }}>Tính toàn vẹn</th>
+                <th style={{ textAlign: "center", width: "220px" }}>Thao tác</th>
+              </tr>
+            </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={9} style={{ textAlign: "center", padding: "2rem", color: "#94a3b8" }}>
+                <td colSpan={9} style={{ textAlign: "center", padding: "2rem", color: "#64748b" }}>
                   Đang tải danh sách điểm...
                 </td>
               </tr>
             ) : scores.length === 0 ? (
               <tr>
-                <td colSpan={9} style={{ textAlign: "center", padding: "2rem", color: "#94a3b8" }}>
-                  Không tìm thấy bản ghi điểm nào.
+                <td colSpan={9} style={{ textAlign: "center", padding: "2rem", color: "#64748b" }}>
+                  Chưa có điểm nào.
                 </td>
               </tr>
             ) : (
-              scores.map((sc) => {
+              scores.map((sc, idx) => {
                 const latestCheck = sc.latestCheck;
                 const result = latestCheck?.result || "PENDING";
 
                 return (
                   <tr key={sc.id}>
-                    <td>#{sc.id}</td>
-                    <td><strong style={{ color: "#38bdf8" }}>{sc.studentId}</strong></td>
+                    <td style={{ textAlign: "center", color: "#64748b" }}>{idx + 1}</td>
+                    <td><strong style={{ color: "var(--primary-ptit)" }}>{sc.studentId}</strong></td>
                     <td>{sc.courseCode}</td>
                     <td>{sc.semester}</td>
-                    <td>
-                      <span style={{ fontSize: "1.1rem", fontWeight: 700, color: Number(sc.score) >= 5 ? "#10b981" : "#ef4444" }}>
+                    <td style={{ textAlign: "center" }}>
+                      <span style={{ fontSize: "1.05rem", fontWeight: 700, color: Number(sc.score) >= 5 ? "#059669" : "#dc2626" }}>
                         {sc.score}
                       </span>
                     </td>
-                    <td>
-                      <span className="badge" style={{ background: "#1e293b", color: "#94a3b8" }}>
+                    <td style={{ textAlign: "center" }}>
+                      <span className="badge" style={{ background: "#f1f5f9", color: "#475569" }}>
                         v{sc.version}
                       </span>
                     </td>
-                    <td>
+                    <td style={{ textAlign: "center" }}>
                       <span className={`badge ${sc.status === "ACTIVE" ? "badge-valid" : "badge-invalid"}`}>
-                        {sc.status}
+                        {sc.status === "ACTIVE" ? "Đang dùng" : "Đã xóa"}
                       </span>
                     </td>
-                    <td>
+                    <td style={{ textAlign: "center" }}>
                       <span className={`badge ${result === "VALID" ? "badge-valid" : result === "INVALID" ? "badge-invalid" : "badge-pending"}`}>
-                        {result === "VALID" ? "✓ VALID" : result === "INVALID" ? "❌ INVALID" : "⏳ " + result}
+                        {result === "VALID" ? "Hợp lệ" : result === "INVALID" ? "Sai lệch" : "Chờ kiểm tra"}
                       </span>
                     </td>
-                    <td>
-                      <div style={{ display: "flex", gap: "0.4rem" }}>
+                    <td style={{ textAlign: "center" }}>
+                      <div style={{ display: "flex", gap: "0.35rem", justifyContent: "center" }}>
                         <button
                           className="btn btn-outline btn-sm"
                           onClick={() => onViewDetail(sc)}
-                          title="Xem đối chiếu chi tiết CSDL vs Blockchain"
+                          title="Xem chi tiết điểm"
                         >
-                          👁️ Chi tiết
+                          Chi tiết
                         </button>
 
                         <button
@@ -225,18 +257,18 @@ export const ScoreListView: React.FC<ScoreListViewProps> = ({
                           style={{ padding: "0.25rem 0.5rem", fontSize: "0.75rem" }}
                           onClick={() => handleCheckSingle(sc)}
                           disabled={checkingId === sc.id}
-                          title="Chạy đối chiếu hash với Smart Contract ngay"
+                          title="Kiểm tra đối soát tính toàn vẹn"
                         >
-                          {checkingId === sc.id ? "⏳" : "🔍 Kiểm tra"}
+                          {checkingId === sc.id ? "..." : "Kiểm tra"}
                         </button>
 
                         {canEdit && sc.status === "ACTIVE" && (
                           <button
                             className="btn btn-sm btn-outline"
                             onClick={() => onEditScore(sc)}
-                            title="Cập nhật điểm mới (tạo version mới)"
+                            title="Chỉnh sửa điểm"
                           >
-                            ✏️ Sửa
+                            Sửa
                           </button>
                         )}
 
@@ -246,9 +278,9 @@ export const ScoreListView: React.FC<ScoreListViewProps> = ({
                             style={{ padding: "0.25rem 0.5rem" }}
                             onClick={() => handleDelete(sc)}
                             disabled={deletingId === sc.id}
-                            title="Soft delete (neo DELETE lên chain)"
+                            title="Xóa điểm"
                           >
-                            🗑️
+                            Xóa
                           </button>
                         )}
                       </div>
@@ -259,6 +291,7 @@ export const ScoreListView: React.FC<ScoreListViewProps> = ({
             )}
           </tbody>
         </table>
+      </div>
       </div>
     </div>
   );

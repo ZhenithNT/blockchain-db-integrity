@@ -41,7 +41,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ user, activeTab, onSelectTab }
           onClick={() => onSelectTab("announcements")}
         >
           <span>📢</span>
-          <span>Thông báo từ ban quản trị</span>
+          <span>Thông báo</span>
         </div>
 
         {/* Student Specific */}
@@ -52,14 +52,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ user, activeTab, onSelectTab }
               onClick={() => onSelectTab("my-grades")}
             >
               <span>🎓</span>
-              <span>Xem điểm & Toàn vẹn</span>
+              <span>Bảng điểm cá nhân</span>
             </div>
             <div
               className={`sidebar-menu-item ${activeTab === "program" ? "active" : ""}`}
               onClick={() => onSelectTab("program")}
             >
               <span>📋</span>
-              <span>Xem chương trình đào tạo</span>
+              <span>Chương trình đào tạo</span>
             </div>
             <div
               className={`sidebar-menu-item ${activeTab === "register" ? "active" : ""}`}
@@ -73,14 +73,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ user, activeTab, onSelectTab }
               onClick={() => onSelectTab("tuition")}
             >
               <span>💳</span>
-              <span>Xem học phí</span>
+              <span>Học phí</span>
             </div>
             <div
               className={`sidebar-menu-item ${activeTab === "timetable" ? "active" : ""}`}
               onClick={() => onSelectTab("timetable")}
             >
               <span>📅</span>
-              <span>Thời khóa biểu dạng tuần</span>
+              <span>Thời khóa biểu</span>
             </div>
           </>
         )}
@@ -93,28 +93,28 @@ export const Sidebar: React.FC<SidebarProps> = ({ user, activeTab, onSelectTab }
               onClick={() => onSelectTab("offerings")}
             >
               <span>📚</span>
-              <span>Lớp học phần phân công</span>
+              <span>Lớp học phần</span>
             </div>
             <div
               className={`sidebar-menu-item ${activeTab === "scores" ? "active" : ""}`}
               onClick={() => onSelectTab("scores")}
             >
               <span>📝</span>
-              <span>Nhập Điểm Tự Do (Thêm/Sửa)</span>
+              <span>Quản lý điểm thi</span>
             </div>
             <div
               className={`sidebar-menu-item ${activeTab === "change-requests" ? "active" : ""}`}
               onClick={() => onSelectTab("change-requests")}
             >
               <span>✍️</span>
-              <span>Đề xuất sửa điểm (Sau khóa)</span>
+              <span>Yêu cầu sửa điểm</span>
             </div>
             <div
               className={`sidebar-menu-item ${activeTab === "integrity" ? "active" : ""}`}
               onClick={() => onSelectTab("integrity")}
             >
               <span>🔍</span>
-              <span>Tra cứu toàn vẹn Blockchain</span>
+              <span>Kiểm tra toàn vẹn điểm</span>
             </div>
           </>
         )}
@@ -127,21 +127,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ user, activeTab, onSelectTab }
               onClick={() => onSelectTab("academic")}
             >
               <span>🏛️</span>
-              <span>Quản lý Đào tạo (Lớp/GV/SV)</span>
+              <span>Quản lý đào tạo</span>
             </div>
             <div
               className={`sidebar-menu-item ${activeTab === "offerings" ? "active" : ""}`}
               onClick={() => onSelectTab("offerings")}
             >
               <span>📚</span>
-              <span>Quản lý Lớp & Duyệt điểm</span>
+              <span>Lớp học phần & duyệt điểm</span>
             </div>
             <div
               className={`sidebar-menu-item ${activeTab === "scores" ? "active" : ""}`}
               onClick={() => onSelectTab("scores")}
             >
               <span>📝</span>
-              <span>Nhập Điểm Tự Do (Thêm/Sửa)</span>
+              <span>Quản lý điểm thi</span>
             </div>
             <div
               className={`sidebar-menu-item ${activeTab === "change-requests" ? "active" : ""}`}
@@ -155,14 +155,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ user, activeTab, onSelectTab }
               onClick={() => onSelectTab("integrity")}
             >
               <span>🔍</span>
-              <span>Kiểm tra toàn vẹn CSDL</span>
+              <span>Kiểm tra toàn vẹn điểm</span>
             </div>
             <div
               className={`sidebar-menu-item ${activeTab === "audit-logs" ? "active" : ""}`}
               onClick={() => onSelectTab("audit-logs")}
             >
               <span>📜</span>
-              <span>Nhật ký hệ thống (Audit Log)</span>
+              <span>Nhật ký hệ thống</span>
             </div>
           </>
         )}
@@ -175,35 +175,35 @@ export const Sidebar: React.FC<SidebarProps> = ({ user, activeTab, onSelectTab }
               onClick={() => onSelectTab("integrity")}
             >
               <span>🔍</span>
-              <span>Kiểm định toàn vẹn hệ thống</span>
+              <span>Kiểm tra toàn vẹn điểm</span>
             </div>
             <div
               className={`sidebar-menu-item ${activeTab === "audit-logs" ? "active" : ""}`}
               onClick={() => onSelectTab("audit-logs")}
             >
               <span>📜</span>
-              <span>Nhật ký hệ thống (Audit Log)</span>
+              <span>Nhật ký hệ thống</span>
             </div>
             <div
               className={`sidebar-menu-item ${activeTab === "offerings" ? "active" : ""}`}
               onClick={() => onSelectTab("offerings")}
             >
               <span>📚</span>
-              <span>Tra cứu Bảng điểm lớp</span>
+              <span>Bảng điểm theo lớp</span>
             </div>
             <div
               className={`sidebar-menu-item ${activeTab === "scores" ? "active" : ""}`}
               onClick={() => onSelectTab("scores")}
             >
               <span>📝</span>
-              <span>Tra cứu Điểm Sinh Viên</span>
+              <span>Bảng điểm sinh viên</span>
             </div>
             <div
               className={`sidebar-menu-item ${activeTab === "change-requests" ? "active" : ""}`}
               onClick={() => onSelectTab("change-requests")}
             >
               <span>✍️</span>
-              <span>Nhật ký yêu cầu điều chỉnh</span>
+              <span>Yêu cầu sửa điểm</span>
             </div>
           </>
         )}

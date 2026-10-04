@@ -153,14 +153,14 @@ export const GradingSheetView: React.FC<GradingSheetViewProps> = ({ user }) => {
   // Admin approves and triggers blockchain anchor
   const handleApproveClass = async () => {
     if (!offeringDetail) return;
-    if (!window.confirm("Xác nhận phê duyệt bảng điểm và ghi bằng chứng lên Hardhat Blockchain?")) {
+    if (!window.confirm("Xác nhận phê duyệt bảng điểm lớp học phần này?")) {
       return;
     }
     setApproving(true);
     setError(null);
     try {
       const res = await api.approveClassScores(offeringDetail.id);
-      alert(`Phê duyệt thành công! Đã neo ${res.confirmedCount} bản ghi điểm lên Blockchain.`);
+      alert(`Đã phê duyệt thành công ${res.confirmedCount} bản ghi điểm.`);
       await loadOfferingDetail(offeringDetail.id);
       await loadOfferings();
     } catch (err: any) {
@@ -183,11 +183,10 @@ export const GradingSheetView: React.FC<GradingSheetViewProps> = ({ user }) => {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
           <div>
             <div className="ptit-card-title">
-              <span>📚</span>
-              <span>BẢNG ĐIỂM LỚP HỌC PHẦN (CHẤM ĐIỂM & ĐỐI SOÁT BLOCKCHAIN)</span>
+              <span>BẢNG ĐIỂM LỚP HỌC PHẦN</span>
             </div>
             <div style={{ fontSize: "0.82rem", color: "#64748b", marginTop: "0.25rem" }}>
-              Nghiệp vụ: Giảng viên chấm điểm theo thành phần • Đào tạo duyệt và neo Smart Contract • Khóa sổ dữ liệu
+              Quản lý nhập điểm, tổng kết và phê duyệt điểm học phần.
             </div>
           </div>
 
@@ -277,11 +276,11 @@ export const GradingSheetView: React.FC<GradingSheetViewProps> = ({ user }) => {
                   }`}
                   style={{ fontSize: "0.8rem", padding: "0.3rem 0.7rem" }}
                 >
-                  {offeringDetail.status === "LOCKED" && "🔒 ĐÃ KHÓA SỔ"}
-                  {offeringDetail.status === "APPROVED" && "✅ ĐÃ PHÊ DUYỆT (ON-CHAIN)"}
-                  {offeringDetail.status === "PUBLISHED" && "📢 ĐÃ CÔNG BỐ"}
-                  {offeringDetail.status === "SUBMITTED" && "📤 ĐÃ NỘP - CHỜ DUYỆT"}
-                  {offeringDetail.status === "DRAFT" && "📝 ĐANG SOẠN THẢO (DRAFT)"}
+                  {offeringDetail.status === "LOCKED" && "ĐÃ KHÓA SỔ"}
+                  {offeringDetail.status === "APPROVED" && "ĐÃ PHÊ DUYỆT"}
+                  {offeringDetail.status === "PUBLISHED" && "ĐÃ CÔNG BỐ"}
+                  {offeringDetail.status === "SUBMITTED" && "CHỜ PHÊ DUYỆT"}
+                  {offeringDetail.status === "DRAFT" && "ĐANG SOẠN THẢO"}
                 </span>
               </div>
             </div>
@@ -292,7 +291,7 @@ export const GradingSheetView: React.FC<GradingSheetViewProps> = ({ user }) => {
             <div style={{ fontSize: "0.85rem", color: "#475569" }}>
               Danh sách: <strong>{offeringDetail.students.length} sinh viên</strong>
               {canEdit && <span style={{ color: "var(--valid)", marginLeft: "0.5rem" }}>● Chế độ nhập điểm đang mở</span>}
-              {isLocked && <span style={{ color: "#7c3aed", marginLeft: "0.5rem" }}>● Điểm đã được niêm phong trên Smart Contract</span>}
+              {isLocked && <span style={{ color: "#7c3aed", marginLeft: "0.5rem" }}>● Bảng điểm đã khóa sổ</span>}
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
@@ -303,14 +302,14 @@ export const GradingSheetView: React.FC<GradingSheetViewProps> = ({ user }) => {
                     onClick={() => handleSaveGrades(true)}
                     disabled={saving}
                   >
-                    💾 Lưu nháp
+                    Lưu nháp
                   </button>
                   <button
                     className="btn btn-primary"
                     onClick={() => handleSaveGrades(false)}
                     disabled={saving}
                   >
-                    📤 {saving ? "Đang gửi..." : "Nộp điểm cho Phòng Đào tạo"}
+                    {saving ? "Đang gửi..." : "Nộp điểm"}
                   </button>
                 </>
               )}
@@ -321,7 +320,7 @@ export const GradingSheetView: React.FC<GradingSheetViewProps> = ({ user }) => {
                   onClick={handleApproveClass}
                   disabled={approving}
                 >
-                  ⚡ {approving ? "Đang ghi Blockchain..." : "Duyệt & Neo Smart Contract"}
+                  {approving ? "Đang phê duyệt..." : "Phê duyệt bảng điểm"}
                 </button>
               )}
 
@@ -330,7 +329,7 @@ export const GradingSheetView: React.FC<GradingSheetViewProps> = ({ user }) => {
                 onClick={() => loadOfferingDetail(offeringDetail.id)}
                 title="Làm mới bảng điểm"
               >
-                🔄 Tải lại
+                Tải lại
               </button>
             </div>
           </div>
@@ -350,7 +349,7 @@ export const GradingSheetView: React.FC<GradingSheetViewProps> = ({ user }) => {
                   <th style={{ textAlign: "center", width: "95px" }}>Tổng kết</th>
                   <th style={{ textAlign: "center", width: "70px" }}>Điểm chữ</th>
                   <th style={{ textAlign: "center", width: "65px" }}>Hệ 4</th>
-                  <th style={{ textAlign: "center", width: "160px" }}>Bằng chứng Blockchain</th>
+                  <th style={{ textAlign: "center", width: "160px" }}>Trạng thái xác thực</th>
                   {isLocked && user.role === "LECTURER" && (
                     <th style={{ textAlign: "center", width: "130px" }}>Thao tác</th>
                   )}
@@ -459,13 +458,13 @@ export const GradingSheetView: React.FC<GradingSheetViewProps> = ({ user }) => {
                             className="badge badge-valid"
                             style={{ cursor: "pointer", border: "1px solid var(--valid-border)" }}
                             onClick={() => setSelectedEvidenceScore(student)}
-                            title="Bấm để xem mã băm SHA-256 và giao dịch on-chain"
+                            title="Bấm để xem chi tiết xác thực dữ liệu"
                           >
-                            <span>⛓️ Đã xác thực (V{student.version || 1})</span>
+                            <span>Đã xác thực (v{student.version || 1})</span>
                           </button>
                         ) : student.scoreId ? (
                           <span className="badge badge-pending">
-                            {student.blockchainStatus || "Chưa xác thực"}
+                            {student.blockchainStatus || "Chờ xác thực"}
                           </span>
                         ) : (
                           <span style={{ fontSize: "0.75rem", color: "#9ca3af" }}>Chưa có điểm</span>
@@ -478,9 +477,9 @@ export const GradingSheetView: React.FC<GradingSheetViewProps> = ({ user }) => {
                           <button
                             className="btn btn-outline-primary btn-sm"
                             onClick={() => setSelectedChangeRequestScore(student)}
-                            title="Tạo đề xuất điều chỉnh điểm kèm minh chứng"
+                            title="Tạo yêu cầu điều chỉnh điểm"
                           >
-                            ✍️ Đề xuất sửa
+                            Đề xuất sửa
                           </button>
                         </td>
                       )}
