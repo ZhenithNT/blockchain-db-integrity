@@ -14,6 +14,7 @@ import type {
   StudentItem,
   CourseItem,
   SemesterItem,
+  AuditLogItem,
 } from "./types";
 
 const TOKEN_KEY = "blockchain_db_integrity_token";
@@ -469,5 +470,16 @@ export const api = {
     return request(`/api/academic/offerings/${offeringId}/enroll`, {
       method: "DELETE",
     });
+  },
+
+  // Audit Logs
+  async getAuditLogs(params: { search?: string; actor?: string; action?: string; limit?: number } = {}) {
+    const qs = new URLSearchParams();
+    if (params.search) qs.set("search", params.search);
+    if (params.actor) qs.set("actor", params.actor);
+    if (params.action) qs.set("action", params.action);
+    if (params.limit) qs.set("limit", params.limit.toString());
+    const query = qs.toString();
+    return request<{ total: number; logs: AuditLogItem[] }>(`/api/audit-logs${query ? `?${query}` : ""}`);
   },
 };

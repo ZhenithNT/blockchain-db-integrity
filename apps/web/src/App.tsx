@@ -5,6 +5,7 @@ import { ChangeRequestsView } from "./components/ChangeRequestsView";
 import { DemoAttackView } from "./components/DemoAttackView";
 import { GradingSheetView } from "./components/GradingSheetView";
 import { IntegrityCheckView } from "./components/IntegrityCheckView";
+import { AuditLogsView } from "./components/AuditLogsView";
 import { LoginModal } from "./components/LoginModal";
 import { Navbar } from "./components/Navbar";
 import { Sidebar, type TabKey } from "./components/Sidebar";
@@ -127,6 +128,10 @@ export const App: React.FC = () => {
 
             {activeTab === "integrity" && (
               <IntegrityCheckView />
+            )}
+
+            {activeTab === "audit-logs" && (
+              <AuditLogsView />
             )}
 
             {activeTab === "demo-attack" && (

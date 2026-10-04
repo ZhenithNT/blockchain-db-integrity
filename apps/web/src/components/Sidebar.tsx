@@ -9,6 +9,7 @@ export type TabKey =
   | "scores"
   | "change-requests"
   | "integrity"
+  | "audit-logs"
   | "demo-attack"
   | "program"
   | "register"
@@ -156,6 +157,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ user, activeTab, onSelectTab }
               <span>🔍</span>
               <span>Kiểm tra toàn vẹn CSDL</span>
             </div>
+            <div
+              className={`sidebar-menu-item ${activeTab === "audit-logs" ? "active" : ""}`}
+              onClick={() => onSelectTab("audit-logs")}
+            >
+              <span>📜</span>
+              <span>Nhật ký hệ thống (Audit Log)</span>
+            </div>
           </>
         )}
 
@@ -168,6 +176,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ user, activeTab, onSelectTab }
             >
               <span>🔍</span>
               <span>Kiểm định toàn vẹn hệ thống</span>
+            </div>
+            <div
+              className={`sidebar-menu-item ${activeTab === "audit-logs" ? "active" : ""}`}
+              onClick={() => onSelectTab("audit-logs")}
+            >
+              <span>📜</span>
+              <span>Nhật ký hệ thống (Audit Log)</span>
             </div>
             <div
               className={`sidebar-menu-item ${activeTab === "offerings" ? "active" : ""}`}

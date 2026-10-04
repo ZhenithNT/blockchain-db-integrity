@@ -12,6 +12,7 @@ import { notificationRouter } from "./routes/notification.routes.js";
 import { offeringRouter } from "./routes/offering.routes.js";
 import { scoreRouter } from "./routes/score.routes.js";
 import { academicRouter } from "./routes/academic.routes.js";
+import { auditRouter } from "./routes/audit.routes.js";
 
 export const app = express();
 
@@ -50,6 +51,7 @@ app.use("/api/integrity", integrityRouter);
 app.use("/api/dashboard", dashboardRouter);
 app.use("/api/demo", demoRouter);
 app.use("/api/academic", academicRouter);
+app.use("/api/audit-logs", auditRouter);
 
 // Middleware xử lý lỗi tập trung
 app.use(errorHandler);

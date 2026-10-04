@@ -255,16 +255,18 @@ export interface DashboardData {
     blockNumber: string | null;
     timestamp: string;
   }[];
-  recentAuditLogs: {
-    id: number;
-    actor: string;
-    action: string;
-    target: string;
-    beforeData: string | null;
-    afterData: string | null;
-    ip: string | null;
-    timestamp: string;
-  }[];
+  recentAuditLogs: AuditLogItem[];
+}
+
+export interface AuditLogItem {
+  id: number;
+  actor: string;
+  action: string;
+  target: string;
+  beforeData: string | null;
+  afterData: string | null;
+  ip: string | null;
+  timestamp: string;
 }
 
 export interface LecturerItem {
