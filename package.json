@@ -27,7 +27,8 @@
     "demo:tamper": "tsx scripts/tamper-database.ts",
     "demo:restore": "tsx scripts/restore-database.ts",
     "integrity:check": "tsx scripts/check-integrity.ts",
-    "attack": "tsx scripts/attack-scenarios.ts"
+    "attack": "tsx scripts/attack-scenarios.ts",
+    "measure:gas": "tsx scripts/measure-gas.ts"
   },
   "keywords": [],
   "author": "",

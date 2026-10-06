@@ -15,7 +15,7 @@ import {
 const prisma = new PrismaClient();
 
 export async function runSeed() {
-  console.log("🌱 Bắt đầu khởi tạo dữ liệu mẫu thực tế Cổng Đào Tạo PTIT...");
+  console.log("🌱 Bắt đầu khởi tạo dữ liệu mẫu thực nghiệm theo Báo Cáo BTL INT14105...");
 
   // 1. Học kỳ (Semesters)
   const semestersData = [
@@ -47,10 +47,22 @@ export async function runSeed() {
       create: s,
     });
   }
-  console.log("  ✓ Đã khởi tạo danh sách học kỳ");
+  console.log("  ✓ Đã khởi tạo danh sách học kỳ (2025-2026.1, 2024-2025.2, 2026-1)");
 
   // 2. Môn học (Courses)
   const coursesData = [
+    {
+      code: "BAS1111",
+      name: "Giải tích 1",
+      credits: 3,
+      department: "Khoa Cơ bản",
+    },
+    {
+      code: "INT14105",
+      name: "An toàn ứng dụng Web và cơ sở dữ liệu",
+      credits: 3,
+      department: "Khoa An toàn Thông tin",
+    },
     {
       code: "INT1313",
       name: "Cơ sở dữ liệu",
@@ -69,12 +81,6 @@ export async function runSeed() {
       credits: 3,
       department: "Khoa Lý luận Chính trị",
     },
-    {
-      code: "ATWEB",
-      name: "An toàn ứng dụng Web",
-      credits: 3,
-      department: "Khoa An toàn Thông tin",
-    },
   ];
 
   for (const c of coursesData) {
@@ -84,21 +90,27 @@ export async function runSeed() {
       create: c,
     });
   }
-  console.log("  ✓ Đã khởi tạo danh sách môn học");
+  console.log("  ✓ Đã khởi tạo danh sách môn học (BAS1111 Giải tích 1, INT14105 AT Web & CSDL, INT1313 CSDL)");
 
   // 3. Giảng viên (Lecturers)
   const lecturersData = [
     {
       lecturerCode: "GV001",
-      fullName: "Đỗ Thanh Hà",
-      faculty: "Khoa Công nghệ Thông tin 1",
-      email: "hadt@ptit.edu.vn",
+      fullName: "Nguyễn Hoài Nam",
+      faculty: "Khoa Cơ bản",
+      email: "namnh@ptit.edu.vn",
     },
     {
       lecturerCode: "GV002",
-      fullName: "Nguyễn Văn Tiến",
+      fullName: "Ths. Vũ Minh Mạnh",
+      faculty: "Khoa An toàn Thông tin",
+      email: "manhvm@ptit.edu.vn",
+    },
+    {
+      lecturerCode: "GV003",
+      fullName: "TS. Đỗ Thanh Hà",
       faculty: "Khoa Công nghệ Thông tin 1",
-      email: "tiennv@ptit.edu.vn",
+      email: "hadt@ptit.edu.vn",
     },
   ];
 
@@ -109,10 +121,17 @@ export async function runSeed() {
       create: l,
     });
   }
-  console.log("  ✓ Đã khởi tạo danh sách giảng viên");
+  console.log("  ✓ Đã khởi tạo danh sách giảng viên (GV001 ThS. Nguyễn Hoài Nam, GV002 ThS. Vũ Minh Mạnh)");
 
-  // 4. Sinh viên (Students - giống ảnh mẫu B23DCAT211 - Nguyễn Trung Nghĩa)
+  // 4. Sinh viên (Students)
   const studentsData = [
+    {
+      studentCode: "B23DCAT111",
+      fullName: "Nguyễn Văn A",
+      className: "D23CQAT01-B",
+      email: "anv@stu.ptit.edu.vn",
+      phone: "0901234567",
+    },
     {
       studentCode: "B23DCAT211",
       fullName: "Nguyễn Trung Nghĩa",
@@ -121,25 +140,25 @@ export async function runSeed() {
       phone: "0987654321",
     },
     {
-      studentCode: "B23DCCN001",
-      fullName: "Trần Quốc Bình",
-      className: "D23CQCN01-B",
-      email: "binhtqb23dccn001@stu.ptit.edu.vn",
+      studentCode: "B23DCAT013",
+      fullName: "Nguyễn Lê Kỳ Anh",
+      className: "D23CQAT01-B",
+      email: "anhnlkb23dcat013@stu.ptit.edu.vn",
       phone: "0912345678",
     },
     {
-      studentCode: "B23DCVT002",
-      fullName: "Lê Văn Cường",
-      className: "D23CQVT02-B",
-      email: "cuonglvb23dcvt002@stu.ptit.edu.vn",
+      studentCode: "B23DCAT086",
+      fullName: "Khuất Quang Hải",
+      className: "D23CQAT01-B",
+      email: "haikqb23dcat086@stu.ptit.edu.vn",
       phone: "0934567890",
     },
     {
       studentCode: "SV001",
-      fullName: "Nguyễn Văn An",
-      className: "D23CQAT01-B",
-      email: "annv@stu.ptit.edu.vn",
-      phone: "0901234567",
+      fullName: "Trần Quốc Bình",
+      className: "D23CQCN01-B",
+      email: "binhtqb23dccn001@stu.ptit.edu.vn",
+      phone: "0912345679",
     },
   ];
 
@@ -150,7 +169,7 @@ export async function runSeed() {
       create: st,
     });
   }
-  console.log("  ✓ Đã khởi tạo danh sách sinh viên");
+  console.log("  ✓ Đã khởi tạo danh sách sinh viên (B23DCAT111 Nguyễn Văn A, B23DCAT211 Nguyễn Trung Nghĩa, B23DCAT013, B23DCAT086)");
 
   // 5. Tài khoản người dùng (Users)
   const defaultSalt = await bcrypt.genSalt(10);
@@ -165,18 +184,26 @@ export async function runSeed() {
     {
       username: "lecturer",
       password: "Lecturer@123",
-      fullName: "TS. Đỗ Thanh Hà",
+      fullName: "ThS. Nguyễn Hoài Nam",
       role: "LECTURER",
-      email: "hadt@ptit.edu.vn",
+      email: "namnh@ptit.edu.vn",
       lecturerCode: "GV001",
     },
     {
-      username: "gv_nvtien",
+      username: "gv_manh",
       password: "Lecturer@123",
-      fullName: "ThS. Nguyễn Văn Tiến",
+      fullName: "ThS. Vũ Minh Mạnh",
       role: "LECTURER",
-      email: "tiennv@ptit.edu.vn",
+      email: "manhvm@ptit.edu.vn",
       lecturerCode: "GV002",
+    },
+    {
+      username: "sv_a",
+      password: "Student@123",
+      fullName: "Nguyễn Văn A",
+      role: "STUDENT",
+      email: "anv@stu.ptit.edu.vn",
+      studentCode: "B23DCAT111",
     },
     {
       username: "sv_nghia",
@@ -185,6 +212,22 @@ export async function runSeed() {
       role: "STUDENT",
       email: "nghianb23dcat211@stu.ptit.edu.vn",
       studentCode: "B23DCAT211",
+    },
+    {
+      username: "sv_kyanh",
+      password: "Student@123",
+      fullName: "Nguyễn Lê Kỳ Anh",
+      role: "STUDENT",
+      email: "anhnlkb23dcat013@stu.ptit.edu.vn",
+      studentCode: "B23DCAT013",
+    },
+    {
+      username: "sv_hai",
+      password: "Student@123",
+      fullName: "Khuất Quang Hải",
+      role: "STUDENT",
+      email: "haikqb23dcat086@stu.ptit.edu.vn",
+      studentCode: "B23DCAT086",
     },
     {
       username: "auditor",
@@ -217,27 +260,39 @@ export async function runSeed() {
       },
     });
   }
-  console.log("  ✓ Đã khởi tạo các tài khoản người dùng (Admin, GV Đỗ Thanh Hà, SV Nguyễn Trung Nghĩa, Auditor)");
+  console.log("  ✓ Đã khởi tạo các tài khoản người dùng (Admin, GV Nguyễn Hoài Nam, SV Nguyễn Văn A, SV Nguyễn Trung Nghĩa, Auditor)");
 
   // 6. Lớp học phần (CourseOfferings)
   const offeringsData = [
     {
-      offeringCode: "INT1313-01",
-      courseCode: "INT1313",
+      offeringCode: "MH001",
+      courseCode: "BAS1111",
       semesterCode: "2025-2026.1",
       room: "A2-301",
       maxStudents: 60,
-      status: "APPROVED", // Đã nộp và được duyệt
+      status: "PUBLISHED", // ĐÃ CÔNG BỐ
       approvedBy: "admin",
       approvedAt: new Date(),
     },
     {
-      offeringCode: "INT1339-01",
-      courseCode: "INT1339",
+      offeringCode: "INT14105-01",
+      courseCode: "INT14105",
+      semesterCode: "2025-2026.1",
+      room: "402-A2",
+      maxStudents: 50,
+      status: "PUBLISHED", // ĐÃ CÔNG BỐ
+      approvedBy: "admin",
+      approvedAt: new Date(),
+    },
+    {
+      offeringCode: "INT1313-01",
+      courseCode: "INT1313",
       semesterCode: "2025-2026.1",
       room: "B1-204",
       maxStudents: 50,
-      status: "DRAFT", // Giảng viên đang nhập nháp
+      status: "APPROVED",
+      approvedBy: "admin",
+      approvedAt: new Date(),
     },
   ];
 
@@ -250,19 +305,19 @@ export async function runSeed() {
     });
     createdOfferings[o.offeringCode] = off;
   }
-  console.log("  ✓ Đã khởi tạo các lớp học phần (INT1313-01 và INT1339-01)");
+  console.log("  ✓ Đã khởi tạo các lớp học phần (MH001 - Giải tích 1 và INT14105-01 - AT Web & CSDL)");
 
   // 7. Phân công giảng viên (LecturerAssignments)
   await prisma.lecturerAssignment.upsert({
     where: {
       unique_offering_lecturer: {
-        offeringId: createdOfferings["INT1313-01"].id,
+        offeringId: createdOfferings["MH001"].id,
         lecturerCode: "GV001",
       },
     },
     update: { canGrade: true },
     create: {
-      offeringId: createdOfferings["INT1313-01"].id,
+      offeringId: createdOfferings["MH001"].id,
       lecturerCode: "GV001",
       role: "PRIMARY",
       canGrade: true,
@@ -272,28 +327,30 @@ export async function runSeed() {
   await prisma.lecturerAssignment.upsert({
     where: {
       unique_offering_lecturer: {
-        offeringId: createdOfferings["INT1339-01"].id,
+        offeringId: createdOfferings["INT14105-01"].id,
         lecturerCode: "GV002",
       },
     },
     update: { canGrade: true },
     create: {
-      offeringId: createdOfferings["INT1339-01"].id,
+      offeringId: createdOfferings["INT14105-01"].id,
       lecturerCode: "GV002",
       role: "PRIMARY",
       canGrade: true,
     },
   });
-  console.log("  ✓ Đã phân công GV Đỗ Thanh Hà dạy INT1313-01, GV Nguyễn Văn Tiến dạy INT1339-01");
+  console.log("  ✓ Đã phân công GV Nguyễn Hoài Nam dạy MH001 (Giải tích 1), GV Vũ Minh Mạnh dạy INT14105-01");
 
   // 8. Đăng ký học (Enrollments)
   const enrollmentsList = [
-    { offeringCode: "INT1313-01", studentCode: "B23DCAT211" },
-    { offeringCode: "INT1313-01", studentCode: "B23DCCN001" },
-    { offeringCode: "INT1313-01", studentCode: "B23DCVT002" },
-    { offeringCode: "INT1313-01", studentCode: "SV001" },
-    { offeringCode: "INT1339-01", studentCode: "B23DCAT211" },
-    { offeringCode: "INT1339-01", studentCode: "B23DCCN001" },
+    { offeringCode: "MH001", studentCode: "B23DCAT111" },
+    { offeringCode: "MH001", studentCode: "B23DCAT211" },
+    { offeringCode: "MH001", studentCode: "B23DCAT013" },
+    { offeringCode: "MH001", studentCode: "B23DCAT086" },
+    { offeringCode: "INT14105-01", studentCode: "B23DCAT211" },
+    { offeringCode: "INT14105-01", studentCode: "B23DCAT013" },
+    { offeringCode: "INT14105-01", studentCode: "B23DCAT086" },
+    { offeringCode: "INT14105-01", studentCode: "B23DCAT111" },
   ];
 
   const createdEnrollments: Record<string, any> = {};
@@ -319,10 +376,59 @@ export async function runSeed() {
   console.log("  ✓ Đã đăng ký sinh viên vào các lớp học phần");
 
   // 9. Điểm số & Neo bằng chứng Blockchain (Scores & Blockchain Evidences)
+  // Bảng 2 & Hình trang 37: B23DCAT111 học Giải tích 1 (BAS1111) điểm 8.50 (v1)
   const initialScores = [
     {
-      offeringCode: "INT1313-01",
-      courseCode: "INT1313",
+      offeringCode: "MH001",
+      courseCode: "BAS1111",
+      semester: "2025-2026.1",
+      studentId: "B23DCAT111",
+      attendance: 8.5,
+      midterm: 8.5,
+      final: 8.5,
+      score: "8.50",
+      letter: "A",
+      actorId: "lecturer",
+    },
+    {
+      offeringCode: "INT14105-01",
+      courseCode: "INT14105",
+      semester: "2025-2026.1",
+      studentId: "B23DCAT211",
+      attendance: 9.0,
+      midterm: 8.5,
+      final: 9.0,
+      score: "8.90",
+      letter: "A",
+      actorId: "gv_manh",
+    },
+    {
+      offeringCode: "INT14105-01",
+      courseCode: "INT14105",
+      semester: "2025-2026.1",
+      studentId: "B23DCAT013",
+      attendance: 8.5,
+      midterm: 8.5,
+      final: 8.5,
+      score: "8.50",
+      letter: "A",
+      actorId: "gv_manh",
+    },
+    {
+      offeringCode: "INT14105-01",
+      courseCode: "INT14105",
+      semester: "2025-2026.1",
+      studentId: "B23DCAT086",
+      attendance: 9.0,
+      midterm: 9.0,
+      final: 8.5,
+      score: "8.75",
+      letter: "A",
+      actorId: "gv_manh",
+    },
+    {
+      offeringCode: "MH001",
+      courseCode: "BAS1111",
       semester: "2025-2026.1",
       studentId: "B23DCAT211",
       attendance: 9.0,
@@ -330,45 +436,11 @@ export async function runSeed() {
       final: 8.5,
       score: "8.45",
       letter: "B+",
-      actorId: "gv_dthaha",
-    },
-    {
-      offeringCode: "INT1313-01",
-      courseCode: "INT1313",
-      semester: "2025-2026.1",
-      studentId: "B23DCCN001",
-      attendance: 8.0,
-      midterm: 7.0,
-      final: 7.0,
-      score: "7.10",
-      letter: "B",
-      actorId: "gv_dthaha",
-    },
-    {
-      offeringCode: "INT1313-01",
-      courseCode: "INT1313",
-      semester: "2025-2026.1",
-      studentId: "B23DCVT002",
-      attendance: 10.0,
-      midterm: 9.0,
-      final: 9.5,
-      score: "9.45",
-      letter: "A+",
-      actorId: "gv_dthaha",
-    },
-    {
-      offeringCode: "INT1313-01",
-      courseCode: "INT1313",
-      semester: "2025-2026.1",
-      studentId: "SV001",
-      attendance: 9.0,
-      midterm: 8.5,
-      final: 8.5,
-      score: "8.55",
-      letter: "A",
-      actorId: "gv_dthaha",
+      actorId: "lecturer",
     },
   ];
+
+  await prisma.auditLog.deleteMany({});
 
   for (const item of initialScores) {
     const recordKey = computeRecordKey({
@@ -408,7 +480,7 @@ export async function runSeed() {
         txHash = receipt.transactionHash;
         blockNum = receipt.blockNumber;
         bcTime = receipt.blockchainTimestamp;
-        console.log(`  🔗 Neo điểm thành công lên Blockchain cho [${item.studentId}] tx: ${txHash.slice(0, 14)}...`);
+        console.log(`  🔗 Neo điểm thành công lên Blockchain cho [${item.studentId} - ${item.courseCode}] tx: ${txHash.slice(0, 14)}...`);
       } else {
         bcStatus = "CONFIRMED";
       }
@@ -485,42 +557,55 @@ export async function runSeed() {
         },
       });
     }
-  }
-  console.log("  ✓ Đã nhập và neo bằng chứng điểm lớp INT1313-01 lên Blockchain");
 
-  // 10. Thông báo đào tạo (Notifications - theo đúng nội dung ảnh mẫu PTIT)
+    // Ghi Audit Log ban đầu
+    await prisma.auditLog.create({
+      data: {
+        actor: item.actorId,
+        action: "CREATE",
+        target: `Score #${scoreRow.id} (${item.studentId} - ${item.courseCode})`,
+        beforeData: null,
+        afterData: JSON.stringify({
+          score: item.score,
+          attendanceScore: item.attendance,
+          midtermScore: item.midterm,
+          finalScore: item.final,
+          version: 1,
+          status: "ACTIVE",
+          dataHash,
+        }),
+        ip: "127.0.0.1",
+        timestamp: new Date(),
+      },
+    });
+  }
+  console.log("  ✓ Đã nhập điểm chuẩn, tạo lịch sử phiên bản 1 và Audit Log ban đầu");
+
+  // 10. Thông báo đào tạo
   const notificationsData = [
     {
-      title: "Giảng viên Đỗ Thanh Hà thông báo đến lớp Cơ sở dữ liệu (INT1313) về vấn đề: học trực tuyến ngày 6/10 do Bão",
-      content: "Do ảnh hưởng của bão số 4, lớp học phần Cơ sở dữ liệu (INT1313-01) sẽ chuyển sang hình thức học trực tuyến qua MS Teams vào ngày 6/10. Đề nghị các em sinh viên kiểm tra lịch và tham gia đầy đủ.",
-      sender: "Giảng viên Đỗ Thanh Hà",
+      title: "Thông báo bảo vệ Bài tập lớn học phần An toàn ứng dụng Web và Cơ sở dữ liệu (INT14105)",
+      content: "Lịch bảo vệ Bài tập lớn học phần An toàn ứng dụng Web và Cơ sở dữ liệu (INT14105) của nhóm 09 lớp 03 sẽ diễn ra theo lịch thông báo của Khoa An toàn Thông tin. Đề nghị các nhóm chuẩn bị bài báo cáo và sản phẩm demo đầy đủ.",
+      sender: "ThS. Vũ Minh Mạnh - Khoa ATTT",
       targetRole: "STUDENT",
       isUrgent: true,
       createdAt: new Date("2025-10-05T08:30:00Z"),
     },
     {
-      title: "TỔ CHỨC ĐĂNG KÝ HỌC PHẦN HỌC KỲ 2 NĂM HỌC 2024-2025",
-      content: "Phòng Giáo vụ thông báo kế hoạch tổ chức đăng ký học phần học kỳ 2 năm học 2024-2025 cho toàn thể sinh viên các khóa. Thời gian mở cổng đăng ký bắt đầu từ 08h00 ngày 10/12/2024.",
+      title: "Công bố bảng điểm học phần Giải tích 1 (BAS1111) Học kỳ 1 năm học 2025-2026",
+      content: "Giảng viên Nguyễn Hoài Nam đã hoàn thành nhập điểm và công bố bảng điểm lớp học phần Giải tích 1 (MH001). Toàn bộ dữ liệu điểm đã được niêm phong mật mã trên Smart Contract Blockchain.",
+      sender: "ThS. Nguyễn Hoài Nam - Khoa Cơ bản",
+      targetRole: "ALL",
+      isUrgent: false,
+      createdAt: new Date("2025-10-04T09:00:00Z"),
+    },
+    {
+      title: "TỔ CHỨC ĐĂNG KÝ HỌC PHẦN HỌC KỲ 2 NĂM HỌC 2025-2026",
+      content: "Phòng Giáo vụ thông báo kế hoạch tổ chức đăng ký học phần học kỳ 2 năm học 2025-2026 cho toàn thể sinh viên các khóa. Thời gian mở cổng đăng ký bắt đầu từ 08h00 ngày 10/12/2025.",
       sender: "Phòng Giáo vụ & Đào tạo",
       targetRole: "ALL",
       isUrgent: false,
-      createdAt: new Date("2024-12-03T09:00:00Z"),
-    },
-    {
-      title: "Giảng viên Nguyễn Văn Tiến thông báo lớp Ngôn ngữ lập trình C++ (INT1339) về vấn đề: Bài tập lớn và lịch nộp",
-      content: "Đề cương bài tập lớn học phần Ngôn ngữ lập trình C++ đã được tải lên hệ thống. Hạn nộp bài tập lớn là tuần thứ 12 của học kỳ.",
-      sender: "Giảng viên Nguyễn Văn Tiến",
-      targetRole: "STUDENT",
-      isUrgent: false,
-      createdAt: new Date("2024-09-12T14:15:00Z"),
-    },
-    {
-      title: "Thông báo: Về việc triển khai đào tạo theo phương thức kết hợp (trực tiếp và trực tuyến) đối với học phần Triết học Mác – Lênin, Kinh tế chính trị Mác- Lênin, Chủ nghĩa xã hội khoa học thuộc học kỳ 1 năm học 2024-2025",
-      content: "Thực hiện kế hoạch năm học, Học viện thông báo phương thức đào tạo kết hợp (Blended Learning) cho khối các môn Lý luận chính trị trong học kỳ 1 năm học 2024-2025.",
-      sender: "Ban Quản lý Đào tạo",
-      targetRole: "ALL",
-      isUrgent: false,
-      createdAt: new Date("2024-08-26T10:00:00Z"),
+      createdAt: new Date("2025-10-01T14:15:00Z"),
     },
   ];
 
@@ -530,7 +615,7 @@ export async function runSeed() {
   }
   console.log("  ✓ Đã khởi tạo các thông báo chuẩn giao diện PTIT");
 
-  console.log("✅ Khởi tạo toàn bộ dữ liệu mẫu hoàn tất!");
+  console.log("✅ Khởi tạo toàn bộ dữ liệu mẫu theo Báo cáo Chương 3 hoàn tất!");
 }
 
 if (import.meta.url === `file:///${process.argv[1].replace(/\\/g, "/")}`) {
