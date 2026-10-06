@@ -16,6 +16,11 @@ import { auditRouter } from "./routes/audit.routes.js";
 
 export const app = express();
 
+// Tự động serialize BigInt sang string để tránh lỗi TypeError: Do not know how to serialize a BigInt
+(BigInt.prototype as any).toJSON = function () {
+  return this.toString();
+};
+
 app.use(cors());
 app.use(express.json());
 

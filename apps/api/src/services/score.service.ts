@@ -122,10 +122,20 @@ export async function getScoreById(id: number) {
 
   return {
     ...score,
+    attendanceScore: score.attendanceScore !== null ? Number(score.attendanceScore) : null,
+    midtermScore: score.midtermScore !== null ? Number(score.midtermScore) : null,
+    finalScore: score.finalScore !== null ? Number(score.finalScore) : null,
     studentName: score.enrollmentRef?.studentRef?.fullName || score.studentId,
     courseName: score.enrollmentRef?.offeringRef?.courseRef?.name || score.courseCode,
     lecturers: score.enrollmentRef?.offeringRef?.assignments.map((a) => a.lecturerRef.fullName) || [],
     latestCheck: score.integrityChecks[0] || null,
+    versions: score.versions.map((v) => ({
+      ...v,
+      blockNumber: v.blockNumber !== null ? v.blockNumber.toString() : null,
+      attendanceScore: v.attendanceScore !== null ? Number(v.attendanceScore) : null,
+      midtermScore: v.midtermScore !== null ? Number(v.midtermScore) : null,
+      finalScore: v.finalScore !== null ? Number(v.finalScore) : null,
+    })),
   };
 }
 
@@ -146,6 +156,9 @@ export async function getScoreHistory(id: number) {
   return score.versions.map((v) => ({
     ...v,
     blockNumber: v.blockNumber !== null ? v.blockNumber.toString() : null,
+    attendanceScore: v.attendanceScore !== null ? Number(v.attendanceScore) : null,
+    midtermScore: v.midtermScore !== null ? Number(v.midtermScore) : null,
+    finalScore: v.finalScore !== null ? Number(v.finalScore) : null,
   }));
 }
 

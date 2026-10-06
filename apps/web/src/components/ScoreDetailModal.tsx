@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../api";
-import type { IntegrityCheckDetail, Score } from "../types";
+import type { IntegrityCheckDetail, Score, ScoreVersion } from "../types";
 
 interface ScoreDetailModalProps {
   score: Score;
@@ -53,6 +53,7 @@ function extractCheckDetail(sc: Score | null): IntegrityCheckDetail | null {
 
 export const ScoreDetailModal: React.FC<ScoreDetailModalProps> = ({ score, onClose }) => {
   const [detail, setDetail] = useState<Score | null>(score);
+  const [versions, setVersions] = useState<ScoreVersion[]>(score.versions || []);
   const [checkResult, setCheckResult] = useState<IntegrityCheckDetail | null>(() =>
     extractCheckDetail(score)
   );
@@ -73,14 +74,30 @@ export const ScoreDetailModal: React.FC<ScoreDetailModalProps> = ({ score, onClo
 
   const loadDetail = async () => {
     try {
-      const full = await api.getScoreById(score.id);
-      setDetail(full);
-      const extracted = extractCheckDetail(full);
-      if (extracted) {
-        setCheckResult(extracted);
+      const [fullRes, historyRes] = await Promise.allSettled([
+        api.getScoreById(score.id),
+        api.getScoreHistory(score.id),
+      ]);
+
+      let fullData: Score | null = null;
+      if (fullRes.status === "fulfilled") {
+        fullData = fullRes.value;
+        setDetail(fullData);
+        if (fullData.versions && fullData.versions.length > 0) {
+          setVersions(fullData.versions);
+        }
+        const extracted = extractCheckDetail(fullData);
+        if (extracted) {
+          setCheckResult(extracted);
+        }
       }
+
+      if (historyRes.status === "fulfilled" && historyRes.value && historyRes.value.length > 0) {
+        setVersions(historyRes.value);
+      }
+
       // Nếu chưa có kết quả kiểm tra nào, tự động kiểm tra ngay
-      if (!extracted && !checkResult) {
+      if (!checkResult && (!fullData || !fullData.latestCheck)) {
         await runCheck();
       }
     } catch (err: any) {
@@ -138,11 +155,78 @@ export const ScoreDetailModal: React.FC<ScoreDetailModalProps> = ({ score, onClo
       ? s.dataHash
       : null);
 
+  // Tổng hợp danh sách phiên bản hiển thị an toàn
+  const displayVersions: {
+    id: number | string;
+    version: number;
+    score: string;
+    action: string;
+    dataHash: string;
+    transactionHash: string | null;
+    blockNumber: string | null;
+    createdAt: string;
+    isValid?: boolean;
+    isInvalid?: boolean;
+  }[] = [];
+
+  if (versions.length > 0) {
+    versions.forEach((v) => {
+      const histCheck = checkResult?.historyChecks?.find((h) => h.version === v.version);
+      const isHistValid = histCheck ? histCheck.matches : isMatch && v.version === s.version;
+      const isHistInvalid = histCheck ? !histCheck.matches : isInvalid && v.version === s.version;
+      displayVersions.push({
+        id: v.id,
+        version: v.version,
+        score: v.score,
+        action: v.action,
+        dataHash: v.dataHash,
+        transactionHash: v.transactionHash,
+        blockNumber: v.blockNumber,
+        createdAt: v.createdAt,
+        isValid: isHistValid,
+        isInvalid: isHistInvalid,
+      });
+    });
+  } else if (checkResult?.historyChecks && checkResult.historyChecks.length > 0) {
+    checkResult.historyChecks.forEach((h) => {
+      displayVersions.push({
+        id: `hc-${h.version}`,
+        version: h.version,
+        score: h.version === s.version ? s.score : "(Bằng chứng On-Chain)",
+        action: h.blockchainAction || h.databaseAction || (h.version === 1 ? "CREATE" : "UPDATE"),
+        dataHash: h.databaseHash,
+        transactionHash: null,
+        blockNumber: null,
+        createdAt: s.createdAt,
+        isValid: h.matches,
+        isInvalid: !h.matches,
+      });
+    });
+  } else if (s.version) {
+    displayVersions.push({
+      id: `current-${s.version}`,
+      version: s.version,
+      score: s.score,
+      action: s.version === 1 ? "CREATE" : "UPDATE",
+      dataHash: s.dataHash,
+      transactionHash: s.latestTxHash || null,
+      blockNumber: null,
+      createdAt: s.createdAt,
+      isValid: isMatch,
+      isInvalid: isInvalid,
+    });
+  }
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
         className="modal-content"
-        style={{ maxWidth: "820px", padding: "2rem" }}
+        style={{
+          maxWidth: "840px",
+          maxHeight: "88vh",
+          overflowY: "auto",
+          padding: "2rem",
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -483,22 +567,12 @@ export const ScoreDetailModal: React.FC<ScoreDetailModalProps> = ({ score, onClo
               color: "#1e293b",
             }}
           >
-            Lịch sử các phiên bản điểm
+            Lịch sử các phiên bản điểm ({displayVersions.length} phiên bản)
           </h3>
 
           <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
-            {detail?.versions && detail.versions.length > 0 ? (
-              detail.versions.map((v) => {
-                const histCheck = checkResult?.historyChecks?.find(
-                  (h) => h.version === v.version
-                );
-                const isHistValid = histCheck
-                  ? histCheck.matches
-                  : isMatch && v.version === s.version;
-                const isHistInvalid = histCheck
-                  ? !histCheck.matches
-                  : isInvalid && v.version === s.version;
-
+            {displayVersions.length > 0 ? (
+              displayVersions.map((v) => {
                 return (
                   <div
                     key={v.id}
@@ -506,9 +580,9 @@ export const ScoreDetailModal: React.FC<ScoreDetailModalProps> = ({ score, onClo
                       background: "#ffffff",
                       border: "1px solid #e2e8f0",
                       borderLeft: `4px solid ${
-                        isHistValid
+                        v.isValid
                           ? "var(--valid)"
-                          : isHistInvalid
+                          : v.isInvalid
                           ? "var(--invalid)"
                           : v.transactionHash
                           ? "var(--valid)"
@@ -535,9 +609,9 @@ export const ScoreDetailModal: React.FC<ScoreDetailModalProps> = ({ score, onClo
                       </div>
                       <span
                         className={`badge ${
-                          isHistValid
+                          v.isValid
                             ? "badge-valid"
-                            : isHistInvalid
+                            : v.isInvalid
                             ? "badge-invalid"
                             : v.transactionHash
                             ? "badge-valid"
@@ -545,9 +619,9 @@ export const ScoreDetailModal: React.FC<ScoreDetailModalProps> = ({ score, onClo
                         }`}
                         style={{ fontSize: "0.65rem" }}
                       >
-                        {isHistValid
+                        {v.isValid
                           ? "Hợp lệ"
-                          : isHistInvalid
+                          : v.isInvalid
                           ? "Sai lệch"
                           : v.transactionHash
                           ? "Đã niêm phong"
@@ -575,8 +649,8 @@ export const ScoreDetailModal: React.FC<ScoreDetailModalProps> = ({ score, onClo
                         Tx:{" "}
                         {v.transactionHash
                           ? `${v.transactionHash.slice(0, 18)}...`
-                          : "Chưa có"}{" "}
-                        (Block #{v.blockNumber || "..."})
+                          : "Ghi nhận Blockchain"}{" "}
+                        {v.blockNumber ? `(Block #${v.blockNumber})` : ""}
                       </span>
                       <span>{new Date(v.createdAt).toLocaleString("vi-VN")}</span>
                     </div>
@@ -585,7 +659,7 @@ export const ScoreDetailModal: React.FC<ScoreDetailModalProps> = ({ score, onClo
               })
             ) : (
               <div style={{ color: "#64748b", fontSize: "0.85rem", padding: "1rem 0" }}>
-                Đang tải lịch sử các phiên bản...
+                Chưa có dữ liệu phiên bản lịch sử.
               </div>
             )}
           </div>
