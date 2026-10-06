@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import {
   type Account,
   createPublicClient,
@@ -81,7 +83,7 @@ async function getClients() {
 let deployedInstance: any = null;
 
 async function getContractInstance() {
-  const { publicClient, walletClient, simulatedViem } = await getClients();
+  const { publicClient, walletClient, account, simulatedViem } = await getClients();
 
   if (simulatedViem) {
     if (deployedInstance) {
@@ -103,6 +105,34 @@ async function getContractInstance() {
       config.contractAddress
     );
     return deployedInstance;
+  }
+
+  // Khi kết nối với Hardhat Node qua RPC:
+  const bytecode = await publicClient.getBytecode({
+    address: config.contractAddress,
+  });
+
+  if (!bytecode || bytecode === "0x") {
+    console.log(
+      `⚠️ Hợp đồng chưa được deploy tại ${config.contractAddress} trên Blockchain Node. Đang tự động deploy...`
+    );
+    const artifactPath = path.resolve(
+      process.cwd(),
+      "artifacts/contracts/IntegrityRegistry.sol/IntegrityRegistry.json"
+    );
+    if (fs.existsSync(artifactPath)) {
+      const artifact = JSON.parse(fs.readFileSync(artifactPath, "utf-8"));
+      const deployHash = await walletClient.deployContract({
+        abi: artifact.abi,
+        bytecode: artifact.bytecode,
+        account,
+      });
+      const receipt = await publicClient.waitForTransactionReceipt({ hash: deployHash });
+      if (receipt.contractAddress) {
+        config.contractAddress = receipt.contractAddress;
+        console.log(`✓ Đã tự động deploy IntegrityRegistry tại: ${config.contractAddress}`);
+      }
+    }
   }
 
   return getContract({
