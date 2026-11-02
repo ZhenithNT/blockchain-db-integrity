@@ -172,6 +172,59 @@ export const EvidenceModal: React.FC<EvidenceModalProps> = ({
                 {score.latestTxHash || "Chưa có giao dịch"}
               </div>
             </div>
+
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <label style={{ fontSize: "0.78rem", fontWeight: 700, color: "#475569" }}>
+                  Định danh người thao tác (Actor Hash):
+                </label>
+                {checkResult?.actorMatches === false ? (
+                  <span className="badge badge-invalid" style={{ fontSize: "0.6rem" }}>
+                    ⚠️ Lệch Actor Hash
+                  </span>
+                ) : checkResult?.blockchainActorHash ? (
+                  <span className="badge badge-valid" style={{ fontSize: "0.6rem" }}>
+                    ✓ Khớp định danh
+                  </span>
+                ) : null}
+              </div>
+              <div
+                className="mono"
+                style={{
+                  background: "#f8fafc",
+                  padding: "0.45rem 0.65rem",
+                  borderRadius: "6px",
+                  fontSize: "0.75rem",
+                  wordBreak: "break-all",
+                  border: `1px solid ${checkResult?.actorMatches === false ? "var(--invalid-border)" : "#e2e8f0"}`,
+                  color: checkResult?.actorMatches === false ? "var(--invalid)" : "#475569",
+                }}
+              >
+                {checkResult?.blockchainActorHash || checkResult?.databaseActorHash || "Chưa có thông tin định danh"}
+              </div>
+            </div>
+
+            {checkResult?.writerAddress && (
+              <div>
+                <label style={{ fontSize: "0.78rem", fontWeight: 700, color: "#475569" }}>
+                  Địa chỉ ví ký On-Chain (Writer Address):
+                </label>
+                <div
+                  className="mono"
+                  style={{
+                    background: "#f8fafc",
+                    padding: "0.45rem 0.65rem",
+                    borderRadius: "6px",
+                    fontSize: "0.75rem",
+                    wordBreak: "break-all",
+                    border: "1px solid #e2e8f0",
+                    color: "#6d28d9",
+                  }}
+                >
+                  {checkResult.writerAddress}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Real-time Verification Section */}

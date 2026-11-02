@@ -162,6 +162,12 @@ export const ScoreDetailModal: React.FC<ScoreDetailModalProps> = ({ score, onClo
     score: string;
     action: string;
     dataHash: string;
+    actorHash?: string;
+    actorUsername?: string | null;
+    actorFullName?: string | null;
+    actorRole?: string | null;
+    blockchainActorHash?: string | null;
+    actorMatches?: boolean;
     transactionHash: string | null;
     blockNumber: string | null;
     createdAt: string;
@@ -174,12 +180,25 @@ export const ScoreDetailModal: React.FC<ScoreDetailModalProps> = ({ score, onClo
       const histCheck = checkResult?.historyChecks?.find((h) => h.version === v.version);
       const isHistValid = histCheck ? histCheck.matches : isMatch && v.version === s.version;
       const isHistInvalid = histCheck ? !histCheck.matches : isInvalid && v.version === s.version;
+      const bcActor = histCheck?.blockchainActorHash || (v.version === s.version ? checkResult?.blockchainActorHash : null);
+      const isActorMatch = histCheck?.actorMatches !== undefined
+        ? histCheck.actorMatches
+        : bcActor && v.actorHash
+        ? bcActor.toLowerCase() === v.actorHash.toLowerCase()
+        : true;
+
       displayVersions.push({
         id: v.id,
         version: v.version,
         score: v.score,
         action: v.action,
         dataHash: v.dataHash,
+        actorHash: v.actorHash,
+        actorUsername: v.actorUsername,
+        actorFullName: v.actorFullName,
+        actorRole: v.actorRole,
+        blockchainActorHash: bcActor,
+        actorMatches: isActorMatch,
         transactionHash: v.transactionHash,
         blockNumber: v.blockNumber,
         createdAt: v.createdAt,
@@ -430,6 +449,35 @@ export const ScoreDetailModal: React.FC<ScoreDetailModalProps> = ({ score, onClo
                   {s.dataHash}
                 </div>
               </div>
+
+              <div style={{ marginTop: "0.35rem", borderTop: "1px dashed #e2e8f0", paddingTop: "0.35rem" }}>
+                <div style={{ color: "#64748b", fontSize: "0.72rem" }}>
+                  Người thao tác & Mã Actor Hash (CSDL):
+                </div>
+                <div style={{ fontSize: "0.75rem", fontWeight: 600, color: "#1e293b", marginTop: "0.1rem" }}>
+                  {s.versions && s.versions.length > 0 && s.versions[s.versions.length - 1].actorFullName
+                    ? `${s.versions[s.versions.length - 1].actorFullName} (${s.versions[s.versions.length - 1].actorUsername || ""})`
+                    : s.versions && s.versions.length > 0 && s.versions[s.versions.length - 1].actorUsername
+                    ? s.versions[s.versions.length - 1].actorUsername
+                    : "Giảng viên / Admin"}
+                </div>
+                <div
+                  className="mono"
+                  style={{
+                    fontSize: "0.68rem",
+                    color: checkResult?.actorMatches === false ? "var(--invalid)" : "#334155",
+                    wordBreak: "break-all",
+                    background: "#ffffff",
+                    padding: "0.35rem 0.5rem",
+                    borderRadius: "4px",
+                    border: `1px solid ${checkResult?.actorMatches === false ? "var(--invalid-border)" : "#cbd5e1"}`,
+                    marginTop: "0.2rem",
+                  }}
+                >
+                  {checkResult?.databaseActorHash ||
+                    (s.versions && s.versions.length > 0 ? s.versions[s.versions.length - 1].actorHash : "Chưa có")}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -512,6 +560,44 @@ export const ScoreDetailModal: React.FC<ScoreDetailModalProps> = ({ score, onClo
                       ? "Đang đối soát dữ liệu với Blockchain..."
                       : "Chưa tìm thấy bằng chứng niêm phong")}
                 </div>
+              </div>
+
+              <div style={{ marginTop: "0.35rem", borderTop: "1px dashed #e2e8f0", paddingTop: "0.35rem" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ color: "#64748b", fontSize: "0.72rem" }}>
+                    Bằng chứng Actor Hash (On-Chain):
+                  </span>
+                  {checkResult?.actorMatches === false ? (
+                    <span className="badge badge-invalid" style={{ fontSize: "0.6rem", padding: "0.1rem 0.35rem" }}>
+                      ⚠️ Lệch định danh
+                    </span>
+                  ) : checkResult?.blockchainActorHash ? (
+                    <span className="badge badge-valid" style={{ fontSize: "0.6rem", padding: "0.1rem 0.35rem" }}>
+                      ✓ Khớp người ký
+                    </span>
+                  ) : null}
+                </div>
+                <div
+                  className="mono"
+                  style={{
+                    fontSize: "0.68rem",
+                    color: checkResult?.actorMatches === false ? "var(--invalid)" : "#6d28d9",
+                    wordBreak: "break-all",
+                    background: "#ffffff",
+                    padding: "0.35rem 0.5rem",
+                    borderRadius: "4px",
+                    border: `1px solid ${checkResult?.actorMatches === false ? "var(--invalid-border)" : "#cbd5e1"}`,
+                    marginTop: "0.2rem",
+                    fontWeight: 600,
+                  }}
+                >
+                  {checkResult?.blockchainActorHash || (checking ? "Đang đối soát..." : "N/A")}
+                </div>
+                {checkResult?.writerAddress && (
+                  <div style={{ fontSize: "0.68rem", color: "#64748b", marginTop: "0.25rem" }}>
+                    Ví ký on-chain: <span className="mono" style={{ color: "#334155" }}>{checkResult.writerAddress.slice(0, 10)}...{checkResult.writerAddress.slice(-6)}</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -636,13 +722,100 @@ export const ScoreDetailModal: React.FC<ScoreDetailModalProps> = ({ score, onClo
                       Data Hash: {v.dataHash}
                     </div>
 
+                    {/* Actor information & Actor Hash */}
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginTop: "0.35rem",
+                        fontSize: "0.73rem",
+                        background: "#f8fafc",
+                        padding: "0.35rem 0.6rem",
+                        borderRadius: "6px",
+                        border: "1px solid #e2e8f0",
+                      }}
+                    >
+                      <div>
+                        <span style={{ color: "#64748b" }}>Người thực hiện: </span>
+                        <strong>
+                          {v.actorFullName
+                            ? `${v.actorFullName} (${v.actorUsername})`
+                            : v.actorUsername
+                            ? v.actorUsername
+                            : "Giảng viên / Admin"}
+                        </strong>
+                        {v.actorRole && (
+                          <span
+                            className="badge"
+                            style={{
+                              marginLeft: "0.4rem",
+                              fontSize: "0.6rem",
+                              background: "#e0e7ff",
+                              color: "#3730a3",
+                            }}
+                          >
+                            {v.actorRole}
+                          </span>
+                        )}
+                      </div>
+                      {v.actorMatches === false ? (
+                        <span
+                          className="badge badge-invalid"
+                          style={{ fontSize: "0.6rem" }}
+                          title="Actor Hash trong CSDL không khớp với Blockchain Evidence!"
+                        >
+                          ⚠️ Mạo danh Actor Hash
+                        </span>
+                      ) : v.blockchainActorHash ? (
+                        <span className="badge badge-valid" style={{ fontSize: "0.6rem" }}>
+                          ✓ Khớp Actor Hash
+                        </span>
+                      ) : null}
+                    </div>
+
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr",
+                        gap: "0.5rem",
+                        marginTop: "0.3rem",
+                        fontSize: "0.68rem",
+                      }}
+                    >
+                      <div>
+                        <span style={{ color: "#64748b" }}>Actor Hash (CSDL):</span>
+                        <div
+                          className="mono"
+                          style={{
+                            color: v.actorMatches === false ? "var(--invalid)" : "#334155",
+                            wordBreak: "break-all",
+                          }}
+                        >
+                          {v.actorHash || "Chưa có"}
+                        </div>
+                      </div>
+                      <div>
+                        <span style={{ color: "#64748b" }}>Actor Hash (On-Chain):</span>
+                        <div
+                          className="mono"
+                          style={{
+                            color: v.actorMatches === false ? "var(--invalid)" : "#6d28d9",
+                            wordBreak: "break-all",
+                          }}
+                        >
+                          {v.blockchainActorHash || v.actorHash || "Đang đối soát..."}
+                        </div>
+                      </div>
+                    </div>
+
                     <div
                       style={{
                         display: "flex",
                         justifyContent: "space-between",
                         fontSize: "0.7rem",
                         color: "#64748b",
-                        marginTop: "0.25rem",
+                        marginTop: "0.35rem",
                       }}
                     >
                       <span>

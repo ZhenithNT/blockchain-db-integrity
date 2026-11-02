@@ -23,6 +23,9 @@ export interface ScoreVersion {
   action: string;
   dataHash: string;
   actorHash: string;
+  actorUsername?: string | null;
+  actorFullName?: string | null;
+  actorRole?: string | null;
   transactionHash: string | null;
   blockNumber: string | null;
   blockchainTimestamp: string | null;
@@ -72,6 +75,9 @@ export interface HistoryCheckItem {
   blockchainHash: string | null;
   databaseAction: string;
   blockchainAction: string | null;
+  databaseActorHash?: string | null;
+  blockchainActorHash?: string | null;
+  actorMatches?: boolean;
   matches: boolean;
   reason?: string;
 }
@@ -86,10 +92,13 @@ export interface IntegrityCheckDetail {
   databaseVersion: number;
   databaseHash: string;
   databaseStatus: string;
+  databaseActorHash?: string | null;
   blockchainHash: string | null;
   blockchainVersion: number | null;
   blockchainAction: string | null;
   blockchainTimestamp: string | null;
+  blockchainActorHash?: string | null;
+  actorMatches?: boolean;
   writerAddress: string | null;
   result: "VALID" | "INVALID" | "PENDING" | "ERROR";
   reason?: string;

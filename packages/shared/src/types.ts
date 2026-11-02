@@ -77,6 +77,9 @@ export interface IntegrityCheckDetail {
   blockchainAction: string | null;
   blockchainTimestamp: string | null;
   writerAddress: string | null;
+  databaseActorHash?: string | null;
+  blockchainActorHash?: string | null;
+  actorMatches?: boolean;
   result: IntegrityResultStatus;
   reason?: IntegrityMismatchReason;
   message: string;
@@ -90,6 +93,9 @@ export interface HistoryVersionCheck {
   blockchainHash: Hex | null;
   databaseAction: string;
   blockchainAction: string | null;
+  databaseActorHash?: string | null;
+  blockchainActorHash?: string | null;
+  actorMatches?: boolean;
   matches: boolean;
   reason?: IntegrityMismatchReason;
 }

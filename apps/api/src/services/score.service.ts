@@ -87,8 +87,20 @@ export async function getScores(filters: {
   }));
 }
 
+async function getActorLookupMap() {
+  const users = await prisma.user.findMany({
+    select: { username: true, fullName: true, role: true },
+  });
+  const map = new Map<string, { username: string; fullName: string; role: string }>();
+  for (const u of users) {
+    map.set(computeActorHash(u.username).toLowerCase(), u);
+  }
+  return map;
+}
+
 export async function getScoreById(id: number) {
-  const score = await prisma.score.findUnique({
+  const [score, actorMap] = await Promise.all([
+    prisma.score.findUnique({
     where: { id },
     include: {
       versions: {
@@ -114,7 +126,9 @@ export async function getScoreById(id: number) {
         },
       },
     },
-  });
+  }),
+    getActorLookupMap(),
+  ]);
 
   if (!score) {
     throw { statusCode: 404, message: `Không tìm thấy bản ghi điểm với ID ${id}` };
@@ -129,37 +143,52 @@ export async function getScoreById(id: number) {
     courseName: score.enrollmentRef?.offeringRef?.courseRef?.name || score.courseCode,
     lecturers: score.enrollmentRef?.offeringRef?.assignments.map((a) => a.lecturerRef.fullName) || [],
     latestCheck: score.integrityChecks[0] || null,
-    versions: score.versions.map((v) => ({
-      ...v,
-      blockNumber: v.blockNumber !== null ? v.blockNumber.toString() : null,
-      attendanceScore: v.attendanceScore !== null ? Number(v.attendanceScore) : null,
-      midtermScore: v.midtermScore !== null ? Number(v.midtermScore) : null,
-      finalScore: v.finalScore !== null ? Number(v.finalScore) : null,
-    })),
+    versions: score.versions.map((v) => {
+      const actorInfo = actorMap.get(v.actorHash?.toLowerCase() || "");
+      return {
+        ...v,
+        blockNumber: v.blockNumber !== null ? v.blockNumber.toString() : null,
+        attendanceScore: v.attendanceScore !== null ? Number(v.attendanceScore) : null,
+        midtermScore: v.midtermScore !== null ? Number(v.midtermScore) : null,
+        finalScore: v.finalScore !== null ? Number(v.finalScore) : null,
+        actorUsername: actorInfo?.username || null,
+        actorFullName: actorInfo?.fullName || null,
+        actorRole: actorInfo?.role || null,
+      };
+    }),
   };
 }
 
 export async function getScoreHistory(id: number) {
-  const score = await prisma.score.findUnique({
-    where: { id },
-    include: {
-      versions: {
-        orderBy: { version: "asc" },
+  const [score, actorMap] = await Promise.all([
+    prisma.score.findUnique({
+      where: { id },
+      include: {
+        versions: {
+          orderBy: { version: "asc" },
+        },
       },
-    },
-  });
+    }),
+    getActorLookupMap(),
+  ]);
 
   if (!score) {
     throw { statusCode: 404, message: `Không tìm thấy bản ghi điểm với ID ${id}` };
   }
 
-  return score.versions.map((v) => ({
-    ...v,
-    blockNumber: v.blockNumber !== null ? v.blockNumber.toString() : null,
-    attendanceScore: v.attendanceScore !== null ? Number(v.attendanceScore) : null,
-    midtermScore: v.midtermScore !== null ? Number(v.midtermScore) : null,
-    finalScore: v.finalScore !== null ? Number(v.finalScore) : null,
-  }));
+  return score.versions.map((v) => {
+    const actorInfo = actorMap.get(v.actorHash?.toLowerCase() || "");
+    return {
+      ...v,
+      blockNumber: v.blockNumber !== null ? v.blockNumber.toString() : null,
+      attendanceScore: v.attendanceScore !== null ? Number(v.attendanceScore) : null,
+      midtermScore: v.midtermScore !== null ? Number(v.midtermScore) : null,
+      finalScore: v.finalScore !== null ? Number(v.finalScore) : null,
+      actorUsername: actorInfo?.username || null,
+      actorFullName: actorInfo?.fullName || null,
+      actorRole: actorInfo?.role || null,
+    };
+  });
 }
 
 export async function getStudentScores(studentCode: string) {

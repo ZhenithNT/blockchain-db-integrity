@@ -148,12 +148,20 @@ export async function checkScoreIntegrity(
           vReason = "MISSING_ON_CHAIN";
         }
 
+        const actorHashMatch =
+          !verRow.actorHash || !chainVerEvidence?.actorHash
+            ? true
+            : verRow.actorHash.toLowerCase() === chainVerEvidence.actorHash.toLowerCase();
+
         historyChecks.push({
           version: verRow.version,
           databaseHash: recomputedVerHash as Hex,
           blockchainHash: chainVerEvidence?.dataHash || null,
           databaseAction: verRow.action,
           blockchainAction: chainVerEvidence ? ActionNames[chainVerEvidence.action] : null,
+          databaseActorHash: verRow.actorHash || null,
+          blockchainActorHash: chainVerEvidence?.actorHash || null,
+          actorMatches: actorHashMatch,
           matches,
           reason: vReason,
         });
@@ -171,6 +179,16 @@ export async function checkScoreIntegrity(
     result = "ERROR";
     message = `Không thể kết nối hoặc truy vấn Blockchain: ${error.message || error}`;
   }
+
+  const latestVersionRow = score.versions && score.versions.length > 0
+    ? score.versions[score.versions.length - 1]
+    : null;
+  const latestDbActorHash = latestVersionRow?.actorHash || null;
+  const latestChainActorHash = blockchainEvidence?.actorHash || null;
+  const topActorMatches =
+    latestDbActorHash && latestChainActorHash
+      ? latestDbActorHash.toLowerCase() === latestChainActorHash.toLowerCase()
+      : true;
 
   const checkDetail: IntegrityCheckDetail = {
     scoreId: score.id,
@@ -190,6 +208,9 @@ export async function checkScoreIntegrity(
       ? new Date(Number(blockchainEvidence.timestamp) * 1000).toISOString()
       : null,
     writerAddress: blockchainEvidence?.writerAddress || null,
+    databaseActorHash: latestDbActorHash,
+    blockchainActorHash: latestChainActorHash,
+    actorMatches: topActorMatches,
     result,
     reason,
     message,
