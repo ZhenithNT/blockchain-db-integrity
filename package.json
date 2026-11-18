@@ -1,7 +1,7 @@
 {
   "name": "blockchain-db-integrity",
   "version": "1.0.0",
-  "description": "",
+  "description": "Áp dụng Blockchain trong bảo mật CSDL: kiểm tra toàn vẹn và truy xuất người ghi điểm",
   "main": "index.js",
   "workspaces": [
     "packages/*",
@@ -10,25 +10,17 @@
   "scripts": {
     "blockchain:node": "hardhat node",
     "blockchain:deploy": "hardhat run scripts/deploy-and-sync-config.ts --network localhost",
-    "blockchain:deploy:simulated": "hardhat run scripts/deploy-and-sync-config.ts",
     "db:init": "prisma db push",
     "db:migrate": "prisma db push",
     "db:seed": "tsx database/seed/seed.ts",
-    "db:clean": "tsx scripts/clean-database.ts",
-    "db:reset-clean": "tsx scripts/reset-everything-clean.ts",
     "dev:api": "tsx watch apps/api/src/index.ts",
     "dev:web": "vite apps/web",
     "dev": "concurrently -n \"API,WEB\" -c \"blue,green\" \"npm run dev:api\" \"npm run dev:web\"",
-    "test": "npm run test:contract && npm run test:unit && npm run test:api",
-    "test:contract": "hardhat test",
-    "test:unit": "tsx --test packages/shared/test/hash.test.ts",
-    "test:api": "tsx --test apps/api/test/api.test.ts",
     "build": "tsc -p packages/shared/tsconfig.json && tsc -p apps/api/tsconfig.json && tsc -p apps/web/tsconfig.json && vite build apps/web",
-    "demo:tamper": "tsx scripts/tamper-database.ts",
-    "demo:restore": "tsx scripts/restore-database.ts",
     "integrity:check": "tsx scripts/check-integrity.ts",
-    "attack": "tsx scripts/attack-scenarios.ts",
-    "measure:gas": "tsx scripts/measure-gas.ts"
+    "measure:gas": "tsx scripts/measure-gas.ts",
+    "demo:fresh": "hardhat build && npm run blockchain:deploy && npm run db:seed",
+    "postinstall": "tsc -p packages/shared/tsconfig.json"
   },
   "keywords": [],
   "author": "",
@@ -39,7 +31,6 @@
     "@nomicfoundation/hardhat-toolbox-viem": "^5.0.7",
     "@types/node": "^22.20.2",
     "concurrently": "^10.0.5",
-    "forge-std": "github:foundry-rs/forge-std#v1.16.2",
     "hardhat": "^3.16.0",
     "typescript": "~6.0.3",
     "viem": "^2.56.5"

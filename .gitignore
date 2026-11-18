@@ -36,3 +36,7 @@ apps/*/dist
 ignition/deployments/chain-31337/
 deployment-info.json
 
+# Log và số liệu đo
+*.log
+gas-report.json
+storage/

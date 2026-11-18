@@ -9,7 +9,7 @@ dotenv.config();
 
 async function main() {
   const rpcUrl = process.env.BLOCKCHAIN_RPC_URL || "http://127.0.0.1:8545";
-  console.log(`🚀 Đang deploy IntegrityRegistry smart contract lên ${rpcUrl}...`);
+  console.log(`Đang deploy IntegrityRegistry smart contract lên ${rpcUrl}...`);
 
   const artifactPath = path.resolve(
     process.cwd(),
@@ -53,7 +53,7 @@ async function main() {
     throw new Error("Không nhận được địa chỉ contract từ transaction receipt.");
   }
 
-  console.log("✅ Deploy thành công!");
+  console.log("Deploy thành công!");
   console.log("  Địa chỉ hợp đồng (CONTRACT_ADDRESS):", contractAddress);
   console.log("  Block number:", receipt.blockNumber.toString());
 
@@ -70,7 +70,7 @@ async function main() {
       envContent += `\nCONTRACT_ADDRESS="${contractAddress}"\n`;
     }
     fs.writeFileSync(envPath, envContent, "utf-8");
-    console.log("  ✓ Đã cập nhật CONTRACT_ADDRESS vào file .env");
+    console.log("  Đã cập nhật CONTRACT_ADDRESS vào file .env");
   }
 
   // Ghi thêm vào file deployment-info.json để các ứng dụng dễ đọc
@@ -83,10 +83,10 @@ async function main() {
     deployedAt: new Date().toISOString(),
   };
   fs.writeFileSync(infoPath, JSON.stringify(info, null, 2), "utf-8");
-  console.log("  ✓ Đã lưu thông tin vào deployment-info.json");
+  console.log("  Đã lưu thông tin vào deployment-info.json");
 }
 
 main().catch((err) => {
-  console.error("❌ Lỗi deploy:", err);
+  console.error("Lỗi deploy:", err);
   process.exit(1);
 });

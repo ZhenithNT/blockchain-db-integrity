@@ -96,7 +96,7 @@ export const AuditLogsView: React.FC = () => {
             <option value="UPDATE_SCORE">Cập nhật điểm</option>
             <option value="DELETE_SCORE">Xóa điểm</option>
             <option value="RESTORE_DATABASE">Khôi phục điểm</option>
-            <option value="APPROVE_OFFERING">Duyệt bảng điểm</option>
+            <option value="SAVE_GRADE_SHEET">Lưu bảng điểm</option>
           </select>
           <button type="submit" className="btn btn-primary btn-sm">
             Tìm kiếm

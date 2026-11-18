@@ -11,7 +11,10 @@ export const config = {
   databaseUrl: process.env.DATABASE_URL || "mysql://root:@localhost:3306/blockchain_db_integrity",
   blockchainRpcUrl: process.env.BLOCKCHAIN_RPC_URL || "http://127.0.0.1:8545",
   contractAddress: (process.env.CONTRACT_ADDRESS || "0x5FbDB2315678afecb367f032d93F642f64180aa3") as `0x${string}`,
-  deployerPrivateKey: (process.env.DEPLOYER_PRIVATE_KEY || "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80") as `0x${string}`,
-  enableDemoAttacks: process.env.ENABLE_DEMO_ATTACKS === "true",
+  /** Khóa của ví hệ thống (owner): chỉ cấp quyền ghi và cấp gas, không ghi điểm. */
+  ownerPrivateKey: (process.env.DEPLOYER_PRIVATE_KEY ||
+    "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80") as `0x${string}`,
+  /** Số ETH (giả, mạng local) cấp cho mỗi ví admin để trả gas. */
+  walletFundingEth: process.env.WALLET_FUNDING_ETH || "100",
   nodeEnv: process.env.NODE_ENV || "development",
 };

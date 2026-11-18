@@ -8,14 +8,11 @@ import {
 
 export const integrityRouter = Router();
 
-// Mọi vai trò đã đăng nhập (ADMIN, LECTURER, AUDITOR) đều được tra cứu và kiểm tra toàn vẹn
 integrityRouter.use(authenticate);
 
 integrityRouter.post("/check/:id", async (req, res, next) => {
   try {
-    const id = Number(req.params.id);
-    const result = await checkScoreIntegrity(id);
-    res.json(result);
+    res.json(await checkScoreIntegrity(Number(req.params.id)));
   } catch (err) {
     next(err);
   }
@@ -23,8 +20,7 @@ integrityRouter.post("/check/:id", async (req, res, next) => {
 
 integrityRouter.post("/check-all", async (_req, res, next) => {
   try {
-    const result = await checkAllScoresIntegrity();
-    res.json(result);
+    res.json(await checkAllScoresIntegrity());
   } catch (err) {
     next(err);
   }
@@ -32,9 +28,7 @@ integrityRouter.post("/check-all", async (_req, res, next) => {
 
 integrityRouter.get("/results", async (req, res, next) => {
   try {
-    const limit = req.query.limit ? Number(req.query.limit) : 20;
-    const results = await getRecentCheckResults(limit);
-    res.json(results);
+    res.json(await getRecentCheckResults(req.query.limit ? Number(req.query.limit) : 20));
   } catch (err) {
     next(err);
   }

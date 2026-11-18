@@ -4,172 +4,66 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 export async function runSeed() {
-  console.log("🌱 Khởi tạo dữ liệu nền tảng ban đầu (Môn học, Giảng viên, Sinh viên B23DCAT111)...");
+  console.log("Khởi tạo dữ liệu mẫu...");
 
-  // 1. Dọn sạch toàn bộ điểm, lớp học phần, phân công và nhật ký cũ để người dùng tự thao tác từ đầu
-  console.log("  🧹 Dọn sạch dữ liệu lớp học phần, điểm và nhật ký cũ...");
+  // Xóa điểm, lịch sử, kết quả kiểm tra và nhật ký cũ để bắt đầu sạch.
   await prisma.integrityCheck.deleteMany({});
   await prisma.scoreVersion.deleteMany({});
-  await prisma.scoreChangeRequest.deleteMany({});
   await prisma.score.deleteMany({});
-  await prisma.enrollment.deleteMany({});
-  await prisma.lecturerAssignment.deleteMany({});
-  await prisma.courseOffering.deleteMany({});
   await prisma.auditLog.deleteMany({});
 
-  // 2. Học kỳ (Semester)
-  await prisma.semester.upsert({
-    where: { code: "2025-2026.1" },
-    update: {
-      name: "Học kỳ 1 năm học 2025-2026",
-      isCurrent: true,
-    },
-    create: {
-      code: "2025-2026.1",
-      name: "Học kỳ 1 năm học 2025-2026",
-      isCurrent: true,
-      startDate: new Date("2025-08-15"),
-      endDate: new Date("2026-01-15"),
-    },
-  });
-  console.log("  ✓ Đã khởi tạo học kỳ: 2025-2026.1 (Học kỳ 1 năm học 2025-2026)");
-
-  // 3. Môn học (Course) - BAS1111 Giải tích 1
-  await prisma.course.upsert({
-    where: { code: "BAS1111" },
-    update: {
-      name: "Giải tích 1",
-      credits: 3,
-      department: "Khoa Cơ bản",
-    },
-    create: {
-      code: "BAS1111",
-      name: "Giải tích 1",
-      credits: 3,
-      department: "Khoa Cơ bản",
-    },
-  });
-  console.log("  ✓ Đã khởi tạo môn học: BAS1111 - Giải tích 1");
-
-  // 4. Giảng viên (Lecturer) - GV001 ThS. Nguyễn Hoài Nam
-  await prisma.lecturer.upsert({
-    where: { lecturerCode: "GV001" },
-    update: {
-      fullName: "Nguyễn Hoài Nam",
-      faculty: "Khoa Cơ bản",
-      email: "namnh@ptit.edu.vn",
-    },
-    create: {
-      lecturerCode: "GV001",
-      fullName: "Nguyễn Hoài Nam",
-      faculty: "Khoa Cơ bản",
-      email: "namnh@ptit.edu.vn",
-    },
-  });
-  console.log("  ✓ Đã khởi tạo giảng viên: GV001 - ThS. Nguyễn Hoài Nam");
-
-  // 5. Sinh viên (Student) - B23DCAT111 Nguyễn Văn A
-  await prisma.student.upsert({
-    where: { studentCode: "B23DCAT111" },
-    update: {
-      fullName: "Nguyễn Văn A",
-      className: "D23CQAT01-B",
-      email: "anv@stu.ptit.edu.vn",
-      phone: "0901234567",
-    },
-    create: {
-      studentCode: "B23DCAT111",
-      fullName: "Nguyễn Văn A",
-      className: "D23CQAT01-B",
-      email: "anv@stu.ptit.edu.vn",
-      phone: "0901234567",
-    },
-  });
-  console.log("  ✓ Đã khởi tạo sinh viên: B23DCAT111 - Nguyễn Văn A (Lớp D23CQAT01-B)");
-
-  // 6. Tài khoản người dùng (Users)
-  const defaultSalt = await bcrypt.genSalt(10);
-  const usersData = [
-    {
-      username: "admin",
-      password: "Admin@123",
-      fullName: "Ban Quản trị Đào tạo",
-      role: "ADMIN",
-      email: "daotao@ptit.edu.vn",
-    },
-    {
-      username: "lecturer",
-      password: "Lecturer@123",
-      fullName: "ThS. Nguyễn Hoài Nam",
-      role: "LECTURER",
-      email: "namnh@ptit.edu.vn",
-      lecturerCode: "GV001",
-    },
-    {
-      username: "sv_a",
-      password: "Student@123",
-      fullName: "Nguyễn Văn A",
-      role: "STUDENT",
-      email: "anv@stu.ptit.edu.vn",
-      studentCode: "B23DCAT111",
-    },
-    {
-      username: "auditor",
-      password: "Auditor@123",
-      fullName: "Kiểm toán viên Độc lập",
-      role: "AUDITOR",
-      email: "kiemtoan@moet.edu.vn",
-    },
+  const semesters = [
+    { code: "2025-2026.1", name: "Học kỳ 1 năm học 2025-2026" },
+    { code: "2025-2026.2", name: "Học kỳ 2 năm học 2025-2026" },
   ];
+  for (const s of semesters) {
+    await prisma.semester.upsert({ where: { code: s.code }, update: { name: s.name }, create: s });
+  }
 
-  for (const u of usersData) {
-    const passwordHash = await bcrypt.hash(u.password, defaultSalt);
+  const courses = [
+    { code: "BAS1111", name: "Giải tích 1", credits: 3 },
+    { code: "INT1313", name: "Cơ sở dữ liệu", credits: 3 },
+    { code: "INT14105", name: "An toàn ứng dụng web và cơ sở dữ liệu", credits: 3 },
+  ];
+  for (const c of courses) {
+    await prisma.course.upsert({ where: { code: c.code }, update: { name: c.name, credits: c.credits }, create: c });
+  }
+
+  const students = [
+    { studentCode: "B23DCAT111", fullName: "Nguyễn Văn A" },
+    { studentCode: "B23DCAT211", fullName: "Nguyễn Trung Nghĩa" },
+    { studentCode: "B23DCAT013", fullName: "Nguyễn Lê Kỳ Anh" },
+    { studentCode: "B23DCAT086", fullName: "Khuất Quang Hải" },
+  ];
+  for (const s of students) {
+    await prisma.student.upsert({ where: { studentCode: s.studentCode }, update: { fullName: s.fullName }, create: s });
+  }
+
+  // Hai admin, mỗi người một ví (ví được tạo ở lần đăng nhập đầu tiên).
+  const users = [
+    { username: "admin", password: "Admin@123", fullName: "Phòng Đào tạo" },
+    { username: "admin2", password: "Admin@123", fullName: "Phòng Khảo thí" },
+  ];
+  for (const u of users) {
+    const passwordHash = await bcrypt.hash(u.password, 10);
     await prisma.user.upsert({
       where: { username: u.username },
-      update: {
-        fullName: u.fullName,
-        role: u.role,
-        studentCode: u.studentCode || null,
-        lecturerCode: u.lecturerCode || null,
-      },
-      create: {
-        username: u.username,
-        passwordHash,
-        fullName: u.fullName,
-        role: u.role,
-        email: u.email,
-        studentCode: u.studentCode || null,
-        lecturerCode: u.lecturerCode || null,
-      },
+      update: { fullName: u.fullName },
+      create: { username: u.username, passwordHash, fullName: u.fullName },
     });
   }
-  console.log("  ✓ Đã khởi tạo các tài khoản: admin, lecturer, sv_a, auditor");
 
-  // 7. Thông báo đào tạo mẫu
-  const notificationsData = [
-    {
-      title: "Thông báo kế hoạch đào tạo Học kỳ 1 năm học 2025-2026",
-      content: "Phòng Giáo vụ và Đào tạo thông báo kế hoạch mở lớp học phần và tiếp nhận kết quả học tập cho Học kỳ 1 năm học 2025-2026.",
-      sender: "Phòng Giáo vụ & Đào tạo",
-      targetRole: "ALL",
-      isUrgent: false,
-      createdAt: new Date(),
-    },
-  ];
+  // Chỉ giữ đúng các tài khoản mẫu (xóa tài khoản cũ cùng ví của chúng).
+  await prisma.user.deleteMany({ where: { username: { notIn: users.map((u) => u.username) } } });
 
-  await prisma.notification.deleteMany({});
-  for (const n of notificationsData) {
-    await prisma.notification.create({ data: n });
-  }
-
-  console.log("\n✅ KHỞI TẠO HOÀN TẤT!");
-  console.log("👉 Chưa có bất kỳ lớp học phần hoặc bản ghi điểm nào. Bạn có thể tự do tạo lớp học phần, ghi danh và nhập điểm theo ý mình!");
+  console.log("Đã nạp: 2 học kỳ, 3 môn, 4 sinh viên, tài khoản admin và admin2.");
+  console.log("Chưa có điểm nào. Đăng nhập để nhập điểm.");
 }
 
 if (import.meta.url === `file:///${process.argv[1].replace(/\\/g, "/")}`) {
   runSeed()
     .catch((err) => {
-      console.error("❌ Lỗi khi seed dữ liệu:", err);
+      console.error("Lỗi khi nạp dữ liệu:", err);
       process.exit(1);
     })
     .finally(async () => {

@@ -3,11 +3,10 @@ import { config } from "./config.js";
 
 const server = app.listen(config.port, () => {
   console.log(`=======================================================`);
-  console.log(`🚀 Blockchain DB Integrity API Server đang chạy!`);
-  console.log(`📡 URL: http://localhost:${config.port}`);
-  console.log(`⛓️  Blockchain RPC: ${config.blockchainRpcUrl}`);
-  console.log(`📜 Contract Address: ${config.contractAddress}`);
-  console.log(`🛡️  Mô phỏng tấn công demo: ${config.enableDemoAttacks ? "BẬT" : "TẮT"}`);
+  console.log(`API đang chạy`);
+  console.log(`URL: http://localhost:${config.port}`);
+  console.log(`Blockchain RPC: ${config.blockchainRpcUrl}`);
+  console.log(`Contract: ${config.contractAddress}`);
   console.log(`=======================================================`);
 });
 

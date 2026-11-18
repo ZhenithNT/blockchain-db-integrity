@@ -2,61 +2,29 @@ import { checkAllScoresIntegrity } from "../apps/api/src/services/integrity.serv
 import { prisma } from "../apps/api/src/db.js";
 
 async function main() {
-  console.log("=================================================================");
-  console.log("🔍 [INTEGRITY CHECKER] KIỂM TRA TÍNH TOÀN VẸN CSDL VỚI BLOCKCHAIN");
-  console.log("=================================================================\n");
+  const start = Date.now();
+  const report = await checkAllScoresIntegrity();
+  const { summary } = report;
 
-  const startTime = Date.now();
-  const summary = await checkAllScoresIntegrity();
-  const duration = Date.now() - startTime;
+  console.log("KIỂM TRA TOÀN VẸN: MySQL so với blockchain");
+  console.log("------------------------------------------");
+  console.log(`Tổng: ${summary.total} | Hợp lệ: ${summary.valid} | Sai lệch: ${summary.invalid} | Lỗi: ${summary.errors} | Bị xóa: ${summary.missing}`);
+  console.log(`Thời gian: ${Date.now() - start} ms\n`);
 
-  console.log("BẢNG TỔNG HỢP KIỂM TRA:");
-  console.log("-----------------------------------------------------------------");
-  console.log(` Tổng số bản ghi kiểm tra: ${summary.total}`);
-  console.log(` ✅ Hợp lệ (VALID):        ${summary.valid}`);
-  console.log(` ❌ Giả mạo (INVALID):     ${summary.invalid}`);
-  console.log(` ⏳ Chờ xử lý (PENDING):   ${summary.pending}`);
-  console.log(` ⚠️  Lỗi truy vấn (ERROR):   ${summary.error}`);
-  console.log(` Thời gian thực thi:       ${duration} ms`);
-  console.log("-----------------------------------------------------------------\n");
-
-  console.log("CHI TIẾT TỪNG BẢN GHI:");
-  for (const item of summary.results) {
-    const icon =
-      item.result === "VALID"
-        ? "✅ VALID"
-        : item.result === "INVALID"
-        ? "❌ INVALID"
-        : "⚠️ " + item.result;
-
-    console.log(`\n[ID ${item.scoreId}] ${item.studentId} | Môn: ${item.courseCode} | HK: ${item.semester}`);
-    console.log(`   - Kết quả kiểm tra:     ${icon}`);
-    if (item.reason) {
-      console.log(`   - Lý do vi phạm:        ${item.reason}`);
-    }
-    console.log(`   - Thông điệp:           ${item.message}`);
-    console.log(`   - Điểm CSDL:            ${item.databaseScore} (Version: ${item.databaseVersion})`);
-    console.log(`   - Hash trong CSDL:      ${item.databaseHash}`);
-    console.log(`   - Hash trên Blockchain: ${item.blockchainHash || "N/A"} (Version: ${item.blockchainVersion || "N/A"})`);
-    if (item.blockchainAction) {
-      console.log(`   - Action trên Chain:    ${item.blockchainAction}`);
-    }
+  for (const r of report.results) {
+    const who = r.writer ? `${r.writer.fullName} (${r.writer.address.slice(0, 8)}…)` : "—";
+    console.log(`[${r.result}] ${r.studentId} | ${r.courseCode} | ${r.semester} | điểm ${r.databaseScore} v${r.databaseVersion} | người ký gần nhất: ${who}`);
+    if (r.result !== "VALID") console.log(`    ${r.reason ?? ""} ${r.message}`);
   }
-
-  console.log("\n=================================================================");
-  if (summary.invalid > 0) {
-    console.log(`🚨 CẢNH BÁO: PHÁT HIỆN ${summary.invalid} BẢN GHI BỊ GIẢ MẠO HOẶC SAI LỆCH VỚI BLOCKCHAIN!`);
-  } else {
-    console.log("✨ TẤT CẢ DỮ LIỆU ĐỀU TOÀN VẸN VÀ KHỚP 100% VỚI BLOCKCHAIN!");
+  for (const m of report.missing) {
+    console.log(`[MISSING_IN_DATABASE] ${m.recordKey.slice(0, 14)}… v${m.blockchainVersion} người ký: ${m.writer?.fullName ?? "—"}`);
   }
-  console.log("=================================================================\n");
+  if (report.chainError) console.log(`Lỗi đọc blockchain: ${report.chainError}`);
 }
 
 main()
   .catch((err) => {
-    console.error("❌ Lỗi khi chạy integrity checker:", err);
+    console.error("Lỗi:", err);
     process.exit(1);
   })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+  .finally(() => prisma.$disconnect());

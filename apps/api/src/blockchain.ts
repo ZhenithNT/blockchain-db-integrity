@@ -1,153 +1,36 @@
-import fs from "node:fs";
-import path from "node:path";
 import {
   type Account,
   createPublicClient,
   createWalletClient,
-  getContract,
   http,
+  parseEther,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { hardhat } from "viem/chains";
 import {
-  Action,
   type EvidenceOnChain,
   type Hex,
   IntegrityRegistryABI,
 } from "@integrity/shared";
 import { config } from "./config.js";
 
-let publicClientInstance: any = null;
-let walletClientInstance: any = null;
-let accountInstance: Account | null = null;
-let simulatedViem: any = null;
+const transport = http(config.blockchainRpcUrl);
 
-async function getClients() {
-  if (publicClientInstance && (walletClientInstance || simulatedViem)) {
-    return {
-      publicClient: publicClientInstance,
-      walletClient: walletClientInstance,
-      account: accountInstance,
-      simulatedViem,
-    };
-  }
+export const publicClient = createPublicClient({ chain: hardhat, transport });
 
-  // 1. Kiểm tra xem Hardhat node HTTP (127.0.0.1:8545) có đang chạy không
-  try {
-    const testClient = createPublicClient({
-      chain: hardhat,
-      transport: http(config.blockchainRpcUrl, { timeout: 1500 }),
-    });
-    await testClient.getBlockNumber();
+/** Ví hệ thống (owner): cấp quyền ghi và cấp gas. Không ghi điểm. */
+export const ownerAccount = privateKeyToAccount(config.ownerPrivateKey);
 
-    // RPC hoạt động bình thường
-    accountInstance = privateKeyToAccount(config.deployerPrivateKey);
-    walletClientInstance = createWalletClient({
-      account: accountInstance,
-      chain: hardhat,
-      transport: http(config.blockchainRpcUrl),
-    });
-    publicClientInstance = testClient;
+export type TxResult = { transactionHash: Hex; blockNumber: bigint };
 
-    return {
-      publicClient: publicClientInstance,
-      walletClient: walletClientInstance,
-      account: accountInstance,
-      simulatedViem: null,
-    };
-  } catch (_rpcErr) {
-    // 2. Nếu Hardhat node chưa chạy, fallback sang in-process Hardhat network (rất tiện cho test & demo độc lập)
-    try {
-      const hre = await import("hardhat");
-      const { viem } = (await hre.default.network.create()) as any;
-      publicClientInstance = await viem.getPublicClient();
-      const [ownerWallet] = await viem.getWalletClients();
-      walletClientInstance = ownerWallet;
-      accountInstance = ownerWallet.account;
-      simulatedViem = viem;
-
-      return {
-        publicClient: publicClientInstance,
-        walletClient: walletClientInstance,
-        account: accountInstance,
-        simulatedViem,
-      };
-    } catch (inProcessErr) {
-      throw new Error(
-        `Không thể kết nối đến Blockchain RPC (${config.blockchainRpcUrl}) hoặc Hardhat runtime: ${inProcessErr}`
-      );
-    }
-  }
-}
-
-let deployedInstance: any = null;
-
-async function getContractInstance() {
-  const { publicClient, walletClient, account, simulatedViem } = await getClients();
-
-  if (simulatedViem) {
-    if (deployedInstance) {
-      return deployedInstance;
-    }
-
-    const bytecode = await publicClient.getBytecode({
-      address: config.contractAddress,
-    });
-
-    if (!bytecode || bytecode === "0x") {
-      deployedInstance = await simulatedViem.deployContract("IntegrityRegistry");
-      config.contractAddress = deployedInstance.address;
-      return deployedInstance;
-    }
-
-    deployedInstance = await simulatedViem.getContractAt(
-      "IntegrityRegistry",
-      config.contractAddress
-    );
-    return deployedInstance;
-  }
-
-  // Khi kết nối với Hardhat Node qua RPC:
-  const bytecode = await publicClient.getBytecode({
-    address: config.contractAddress,
-  });
-
-  if (!bytecode || bytecode === "0x") {
-    console.log(
-      `⚠️ Hợp đồng chưa được deploy tại ${config.contractAddress} trên Blockchain Node. Đang tự động deploy...`
-    );
-    const artifactPath = path.resolve(
-      process.cwd(),
-      "artifacts/contracts/IntegrityRegistry.sol/IntegrityRegistry.json"
-    );
-    if (fs.existsSync(artifactPath)) {
-      const artifact = JSON.parse(fs.readFileSync(artifactPath, "utf-8"));
-      const deployHash = await walletClient.deployContract({
-        abi: artifact.abi,
-        bytecode: artifact.bytecode,
-        account,
-      });
-      const receipt = await publicClient.waitForTransactionReceipt({ hash: deployHash });
-      if (receipt.contractAddress) {
-        config.contractAddress = receipt.contractAddress;
-        console.log(`✓ Đã tự động deploy IntegrityRegistry tại: ${config.contractAddress}`);
-      }
-    }
-  }
-
-  return getContract({
-    address: config.contractAddress,
-    abi: IntegrityRegistryABI,
-    client: {
-      public: publicClient,
-      wallet: walletClient,
-    },
-  });
+/** Lấy lý do revert dễ đọc từ lỗi của viem. */
+export function revertReason(err: any): string {
+  const found = err?.walk?.((e: any) => typeof e?.reason === "string");
+  return found?.reason || err?.shortMessage || err?.message || String(err);
 }
 
 export async function isBlockchainAvailable(): Promise<boolean> {
   try {
-    const { publicClient } = await getClients();
     await publicClient.getBlockNumber();
     return true;
   } catch {
@@ -155,93 +38,176 @@ export async function isBlockchainAvailable(): Promise<boolean> {
   }
 }
 
-export async function appendEvidenceOnChain(
-  recordKey: Hex,
-  dataHash: Hex,
-  actorHash: Hex,
-  expectedVersion: bigint,
-  action: Action
-): Promise<{
-  transactionHash: Hex;
-  blockNumber: bigint;
-  blockchainTimestamp: Date;
-}> {
-  const { publicClient, walletClient, account } = await getClients();
-  const contract = await getContractInstance();
+/** Báo lỗi rõ ràng khi chưa deploy contract hoặc node đã bị khởi động lại. */
+async function assertContractDeployed() {
+  const code = await publicClient.getBytecode({ address: config.contractAddress });
+  if (!code || code === "0x") {
+    throw {
+      statusCode: 503,
+      message: `Chưa có contract tại ${config.contractAddress}. Chạy: npm run blockchain:deploy`,
+    };
+  }
+}
 
-  const txHash = await contract.write.appendEvidence(
-    [recordKey, dataHash, actorHash, expectedVersion, action],
-    { account }
-  );
+// Mỗi ví gửi tuần tự để tránh trùng nonce.
+const queues = new Map<string, Promise<unknown>>();
+function serial<T>(address: string, job: () => Promise<T>): Promise<T> {
+  const key = address.toLowerCase();
+  const prev = queues.get(key) || Promise.resolve();
+  const next = prev.then(job, job);
+  queues.set(key, next.catch(() => undefined));
+  return next;
+}
 
-  const receipt = await publicClient.waitForTransactionReceipt({
-    hash: txHash,
+/** Gửi một giao dịch gọi hàm của contract, ký bằng khóa của `signer`. */
+export async function sendTx(
+  signer: Account,
+  functionName: string,
+  args: readonly unknown[]
+): Promise<TxResult> {
+  await assertContractDeployed();
+  return serial(signer.address, async () => {
+    try {
+      const wallet = createWalletClient({ account: signer, chain: hardhat, transport });
+      const { request } = await publicClient.simulateContract({
+        address: config.contractAddress,
+        abi: IntegrityRegistryABI,
+        functionName: functionName as any,
+        args: args as any,
+        account: signer,
+      });
+      const hash = await wallet.writeContract(request);
+      const receipt = await publicClient.waitForTransactionReceipt({ hash });
+      if (receipt.status !== "success") {
+        throw new Error(`Giao dịch ${hash} bị revert`);
+      }
+      return { transactionHash: hash, blockNumber: receipt.blockNumber };
+    } catch (err: any) {
+      throw { statusCode: 502, message: `Ghi lên blockchain thất bại: ${revertReason(err)}` };
+    }
   });
+}
 
-  const block = await publicClient.getBlock({
-    blockNumber: receipt.blockNumber,
-  });
+// ---------------------------------------------------------------------------
+// Đọc từ contract (miễn phí)
+// ---------------------------------------------------------------------------
 
-  const blockchainTimestamp = new Date(Number(block.timestamp) * 1000);
-
+function toEvidence(e: any): EvidenceOnChain {
   return {
-    transactionHash: txHash,
-    blockNumber: receipt.blockNumber,
-    blockchainTimestamp,
+    dataHash: e.dataHash as Hex,
+    version: BigInt(e.version),
+    timestamp: BigInt(e.timestamp),
+    action: Number(e.action),
+    writer: e.writer as Hex,
   };
 }
 
-export async function getLatestEvidenceFromChain(
-  recordKey: Hex
-): Promise<EvidenceOnChain> {
-  const contract = await getContractInstance();
-  const evidence = await contract.read.getLatestEvidence([recordKey]);
-
-  return {
-    dataHash: evidence.dataHash as Hex,
-    actorHash: evidence.actorHash as Hex,
-    version: BigInt(evidence.version),
-    timestamp: BigInt(evidence.timestamp),
-    action: Number(evidence.action) as Action,
-    writerAddress: evidence.writerAddress,
-  };
-}
-
-export async function getEvidenceByVersionFromChain(
-  recordKey: Hex,
-  version: bigint
-): Promise<EvidenceOnChain> {
-  const contract = await getContractInstance();
-  const evidence = await contract.read.getEvidenceByVersion([
-    recordKey,
-    version,
-  ]);
-
-  return {
-    dataHash: evidence.dataHash as Hex,
-    actorHash: evidence.actorHash as Hex,
-    version: BigInt(evidence.version),
-    timestamp: BigInt(evidence.timestamp),
-    action: Number(evidence.action) as Action,
-    writerAddress: evidence.writerAddress,
-  };
-}
-
-export async function getVersionCountFromChain(
-  recordKey: Hex
-): Promise<bigint> {
-  const contract = await getContractInstance();
-  const count = await contract.read.getVersionCount([recordKey]);
-  return BigInt(count);
-}
-
-export async function recordExistsOnChain(recordKey: Hex): Promise<boolean> {
-  const contract = await getContractInstance();
-  return await contract.read.exists([recordKey]);
+/** Toàn bộ lịch sử bằng chứng của một recordKey (rỗng nếu chưa có). */
+export async function getHistoryFromChain(recordKey: Hex): Promise<EvidenceOnChain[]> {
+  await assertContractDeployed();
+  const list = (await publicClient.readContract({
+    address: config.contractAddress,
+    abi: IntegrityRegistryABI,
+    functionName: "getHistory",
+    args: [recordKey],
+  })) as readonly any[];
+  return list.map(toEvidence);
 }
 
 export async function getAllRecordKeysFromChain(): Promise<Hex[]> {
-  const contract = await getContractInstance();
-  const keys = await contract.read.getAllRecordKeys();
-  return keys as Hex[];
+  await assertContractDeployed();
+  const keys = await publicClient.readContract({
+    address: config.contractAddress,
+    abi: IntegrityRegistryABI,
+    functionName: "getAllRecordKeys",
+  });
+  return [...keys] as Hex[];
+}
+
+export async function isWriterOnChain(address: Hex): Promise<boolean> {
+  await assertContractDeployed();
+  return (await publicClient.readContract({
+    address: config.contractAddress,
+    abi: IntegrityRegistryABI,
+    functionName: "isWriter",
+    args: [address],
+  })) as boolean;
+}
+
+export async function getWritersFromChain(): Promise<Hex[]> {
+  await assertContractDeployed();
+  const list = await publicClient.readContract({
+    address: config.contractAddress,
+    abi: IntegrityRegistryABI,
+    functionName: "getWriters",
+  });
+  return [...list] as Hex[];
+}
+
+/**
+ * Kiểm tra mã giao dịch có thật sự là giao dịch ghi bằng chứng `version` của `recordKey`
+ * trên contract này hay không (đọc event EvidenceAdded trong biên lai).
+ */
+export async function txProvesEvidence(txHash: Hex, recordKey: Hex, version: number): Promise<boolean> {
+  try {
+    const receipt = await publicClient.getTransactionReceipt({ hash: txHash });
+    if (receipt.status !== "success") return false;
+    return receipt.logs.some(
+      (log) =>
+        log.address.toLowerCase() === config.contractAddress.toLowerCase() &&
+        log.topics[1]?.toLowerCase() === recordKey.toLowerCase() &&
+        log.topics[2] !== undefined &&
+        BigInt(log.topics[2]) === BigInt(version)
+    );
+  } catch {
+    return false;
+  }
+}
+
+/** Mã giao dịch và số khối của từng phiên bản, đọc từ event EvidenceAdded. */
+export async function getEvidenceTxs(recordKey: Hex) {
+  const logs = await publicClient.getContractEvents({
+    address: config.contractAddress,
+    abi: IntegrityRegistryABI,
+    eventName: "EvidenceAdded",
+    args: { recordKey },
+    fromBlock: 0n,
+    toBlock: "latest",
+  });
+  const map = new Map<number, { transactionHash: Hex; blockNumber: bigint }>();
+  for (const l of logs) {
+    map.set(Number((l as any).args.version), {
+      transactionHash: l.transactionHash as Hex,
+      blockNumber: l.blockNumber as bigint,
+    });
+  }
+  return map;
+}
+
+// ---------------------------------------------------------------------------
+// Việc của ví hệ thống (owner)
+// ---------------------------------------------------------------------------
+
+export async function getBalance(address: Hex): Promise<bigint> {
+  return publicClient.getBalance({ address });
+}
+
+/** Cấp gas cho ví admin mới (mạng local). */
+export async function fundWallet(address: Hex): Promise<void> {
+  const wallet = createWalletClient({ account: ownerAccount, chain: hardhat, transport });
+  await serial(ownerAccount.address, async () => {
+    const hash = await wallet.sendTransaction({
+      to: address,
+      value: parseEther(config.walletFundingEth),
+    });
+    await publicClient.waitForTransactionReceipt({ hash });
+  });
+}
+
+export async function grantWriter(address: Hex): Promise<void> {
+  await sendTx(ownerAccount, "addWriter", [address]);
+}
+
+export async function revokeWriter(address: Hex): Promise<void> {
+  await sendTx(ownerAccount, "removeWriter", [address]);
 }

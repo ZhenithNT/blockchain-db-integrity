@@ -1,842 +1,198 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../api";
-import type { IntegrityCheckDetail, Score, ScoreVersion } from "../types";
+import type { IntegrityCheckDetail, ScoreDetail } from "../types";
+import { Hash, REASON_LABEL, Signer, formatTime, shortHash } from "./ui";
 
-interface ScoreDetailModalProps {
-  score: Score;
+interface Props {
+  scoreId: number;
   onClose: () => void;
 }
 
-function extractCheckDetail(sc: Score | null): IntegrityCheckDetail | null {
-  if (!sc) return null;
-  if (sc.latestCheck?.details) {
-    try {
-      const parsed = JSON.parse(sc.latestCheck.details);
-      if (parsed && typeof parsed === "object" && parsed.result) {
-        return parsed as IntegrityCheckDetail;
-      }
-    } catch {
-      // ignore JSON parse error
-    }
-  }
-  if (sc.latestCheck) {
-    return {
-      scoreId: sc.id,
-      studentId: sc.studentId,
-      courseCode: sc.courseCode,
-      semester: sc.semester,
-      recordKey: sc.recordKey,
-      databaseScore: sc.score,
-      databaseVersion: sc.version,
-      databaseHash: sc.dataHash,
-      databaseStatus: sc.status,
-      blockchainHash: sc.latestCheck.blockchainHash,
-      blockchainVersion: sc.latestCheck.blockchainVersion,
-      blockchainAction:
-        sc.latestCheck.result === "VALID"
-          ? sc.version === 1
-            ? "CREATE"
-            : "UPDATE"
-          : null,
-      blockchainTimestamp: sc.latestCheck.checkedAt,
-      writerAddress: null,
-      result: sc.latestCheck.result,
-      message:
-        sc.latestCheck.result === "VALID"
-          ? "Dữ liệu CSDL khớp hoàn toàn với Bằng chứng toàn vẹn trên Blockchain."
-          : "Dữ liệu hoặc lịch sử có dấu hiệu không khớp với Bằng chứng Blockchain.",
-      checkedAt: sc.latestCheck.checkedAt,
-    };
-  }
-  return null;
-}
-
-export const ScoreDetailModal: React.FC<ScoreDetailModalProps> = ({ score, onClose }) => {
-  const [detail, setDetail] = useState<Score | null>(score);
-  const [versions, setVersions] = useState<ScoreVersion[]>(score.versions || []);
-  const [checkResult, setCheckResult] = useState<IntegrityCheckDetail | null>(() =>
-    extractCheckDetail(score)
-  );
+export const ScoreDetailModal: React.FC<Props> = ({ scoreId, onClose }) => {
+  const [detail, setDetail] = useState<ScoreDetail | null>(null);
+  const [check, setCheck] = useState<IntegrityCheckDetail | null>(null);
   const [checking, setChecking] = useState(false);
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const runCheck = async () => {
     setChecking(true);
     try {
-      const res = await api.checkIntegrity(score.id);
-      setCheckResult(res);
+      setCheck(await api.checkIntegrity(scoreId));
     } catch (err: any) {
-      console.error("Lỗi khi kiểm tra tính toàn vẹn:", err);
+      setError(err.message);
     } finally {
       setChecking(false);
     }
   };
 
-  const loadDetail = async () => {
-    try {
-      const [fullRes, historyRes] = await Promise.allSettled([
-        api.getScoreById(score.id),
-        api.getScoreHistory(score.id),
-      ]);
-
-      let fullData: Score | null = null;
-      if (fullRes.status === "fulfilled") {
-        fullData = fullRes.value;
-        setDetail(fullData);
-        if (fullData.versions && fullData.versions.length > 0) {
-          setVersions(fullData.versions);
-        }
-        const extracted = extractCheckDetail(fullData);
-        if (extracted) {
-          setCheckResult(extracted);
-        }
-      }
-
-      if (historyRes.status === "fulfilled" && historyRes.value && historyRes.value.length > 0) {
-        setVersions(historyRes.value);
-      }
-
-      // Nếu chưa có kết quả kiểm tra nào, tự động kiểm tra ngay
-      if (!checkResult && (!fullData || !fullData.latestCheck)) {
-        await runCheck();
-      }
-    } catch (err: any) {
-      console.error("Lỗi khi tải chi tiết điểm:", err);
-      if (!checkResult) {
-        await runCheck();
-      }
-    }
-  };
-
   useEffect(() => {
-    loadDetail();
-  }, [score.id]);
+    api
+      .getScoreById(scoreId)
+      .then(setDetail)
+      .catch((e) => setError(e.message));
+    runCheck();
+  }, [scoreId]);
 
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedKey(label);
-    setTimeout(() => setCopiedKey(null), 2000);
-  };
+  const tone = check?.result === "VALID" ? "valid" : check?.result === "INVALID" ? "invalid" : "pending";
+  const headline = check
+    ? check.result === "VALID"
+      ? "Dữ liệu khớp với blockchain"
+      : check.result === "INVALID"
+        ? "Dữ liệu không khớp với blockchain"
+        : "Không kiểm tra được"
+    : checking
+      ? "Đang kiểm tra…"
+      : "Chưa kiểm tra";
 
-  const s = detail || score;
-  const isMatch = checkResult?.result === "VALID";
-  const isInvalid = checkResult?.result === "INVALID";
+  const Mark: React.FC<{ ok: boolean | undefined }> = ({ ok }) =>
+    ok === undefined ? (
+      <span className="sd-mark">—</span>
+    ) : ok ? (
+      <span className="sd-mark ok">✓</span>
+    ) : (
+      <span className="sd-mark bad">✗</span>
+    );
 
-  // Fallback values when confirmed on chain
-  const displayBcVersion =
-    checkResult?.blockchainVersion != null
-      ? checkResult.blockchainVersion
-      : s.blockchainStatus === "CONFIRMED"
-      ? s.version
-      : null;
-
-  const displayBcAction =
-    checkResult?.blockchainAction ||
-    (s.blockchainStatus === "CONFIRMED"
-      ? s.status === "ACTIVE"
-        ? s.version === 1
-          ? "CREATE"
-          : "UPDATE"
-        : "DELETE"
-      : null);
-
-  const displayBcTimestamp =
-    checkResult?.blockchainTimestamp
-      ? new Date(checkResult.blockchainTimestamp).toLocaleString("vi-VN")
-      : s.blockchainStatus === "CONFIRMED"
-      ? new Date(s.updatedAt || s.createdAt).toLocaleString("vi-VN")
-      : null;
-
-  const displayBcHash =
-    checkResult?.blockchainHash ||
-    (isMatch
-      ? s.dataHash
-      : s.blockchainStatus === "CONFIRMED" && !isInvalid
-      ? s.dataHash
-      : null);
-
-  // Tổng hợp danh sách phiên bản hiển thị an toàn
-  const displayVersions: {
-    id: number | string;
-    version: number;
-    score: string;
-    action: string;
-    dataHash: string;
-    actorHash?: string;
-    actorUsername?: string | null;
-    actorFullName?: string | null;
-    actorRole?: string | null;
-    blockchainActorHash?: string | null;
-    actorMatches?: boolean;
-    transactionHash: string | null;
-    blockNumber: string | null;
-    createdAt: string;
-    isValid?: boolean;
-    isInvalid?: boolean;
-  }[] = [];
-
-  if (versions.length > 0) {
-    versions.forEach((v) => {
-      const histCheck = checkResult?.historyChecks?.find((h) => h.version === v.version);
-      const isHistValid = histCheck ? histCheck.matches : isMatch && v.version === s.version;
-      const isHistInvalid = histCheck ? !histCheck.matches : isInvalid && v.version === s.version;
-      const bcActor = histCheck?.blockchainActorHash || (v.version === s.version ? checkResult?.blockchainActorHash : null);
-      const isActorMatch = histCheck?.actorMatches !== undefined
-        ? histCheck.actorMatches
-        : bcActor && v.actorHash
-        ? bcActor.toLowerCase() === v.actorHash.toLowerCase()
-        : true;
-
-      displayVersions.push({
-        id: v.id,
-        version: v.version,
-        score: v.score,
-        action: v.action,
-        dataHash: v.dataHash,
-        actorHash: v.actorHash,
-        actorUsername: v.actorUsername,
-        actorFullName: v.actorFullName,
-        actorRole: v.actorRole,
-        blockchainActorHash: bcActor,
-        actorMatches: isActorMatch,
-        transactionHash: v.transactionHash,
-        blockNumber: v.blockNumber,
-        createdAt: v.createdAt,
-        isValid: isHistValid,
-        isInvalid: isHistInvalid,
-      });
-    });
-  } else if (checkResult?.historyChecks && checkResult.historyChecks.length > 0) {
-    checkResult.historyChecks.forEach((h) => {
-      displayVersions.push({
-        id: `hc-${h.version}`,
-        version: h.version,
-        score: h.version === s.version ? s.score : "(Bằng chứng On-Chain)",
-        action: h.blockchainAction || h.databaseAction || (h.version === 1 ? "CREATE" : "UPDATE"),
-        dataHash: h.databaseHash,
-        transactionHash: null,
-        blockNumber: null,
-        createdAt: s.createdAt,
-        isValid: h.matches,
-        isInvalid: !h.matches,
-      });
-    });
-  } else if (s.version) {
-    displayVersions.push({
-      id: `current-${s.version}`,
-      version: s.version,
-      score: s.score,
-      action: s.version === 1 ? "CREATE" : "UPDATE",
-      dataHash: s.dataHash,
-      transactionHash: s.latestTxHash || null,
-      blockNumber: null,
-      createdAt: s.createdAt,
-      isValid: isMatch,
-      isInvalid: isInvalid,
-    });
-  }
+  const hashOk = check?.blockchainHash ? check.blockchainHash.toLowerCase() === check.databaseHash.toLowerCase() : undefined;
+  const versionOk = check?.blockchainVersion != null ? check.blockchainVersion === check.databaseVersion : undefined;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div
-        className="modal-content"
-        style={{
-          maxWidth: "840px",
-          maxHeight: "88vh",
-          overflowY: "auto",
-          padding: "2rem",
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            marginBottom: "1.5rem",
-            borderBottom: "1px solid #e2e8f0",
-            paddingBottom: "1rem",
-          }}
-        >
+      <div className="modal-content sd-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="sd-head">
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <h2 style={{ fontSize: "1.3rem", fontWeight: 700, color: "#1e293b" }}>
-                Chi tiết điểm thi: {s.studentId}
-              </h2>
-              <span className={`badge ${s.status === "ACTIVE" ? "badge-valid" : "badge-invalid"}`}>
-                {s.status === "ACTIVE" ? "Đang dùng" : "Đã xóa"}
-              </span>
-            </div>
-            <p style={{ color: "#64748b", fontSize: "0.85rem", marginTop: "0.2rem" }}>
-              Môn: <strong>{s.courseCode}</strong> | Học kỳ: <strong>{s.semester}</strong> | ID: #{s.id}
+            <h2>{detail?.studentId ?? "..."}</h2>
+            <p>
+              {detail ? `${detail.studentName ?? ""} · ${detail.courseCode} · ${detail.semester}` : ""}
             </p>
           </div>
-
           <button className="btn btn-outline btn-sm" onClick={onClose}>
-            ✕ Đóng
+            Đóng
           </button>
         </div>
 
-        {/* Status Verification Banner */}
-        <div
-          style={{
-            background: isMatch
-              ? "var(--valid-bg)"
-              : isInvalid
-              ? "var(--invalid-bg)"
-              : "var(--pending-bg)",
-            border: `1px solid ${
-              isMatch
-                ? "var(--valid-border)"
-                : isInvalid
-                ? "var(--invalid-border)"
-                : "var(--pending-border)"
-            }`,
-            borderRadius: "10px",
-            padding: "1rem 1.25rem",
-            marginBottom: "1.5rem",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: "1rem",
-          }}
-        >
+        {error && <div className="badge badge-invalid" style={{ marginBottom: "1rem", whiteSpace: "normal" }}>{error}</div>}
+
+        <div className={`sd-banner ${tone}`}>
           <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-              <span style={{ fontSize: "1.2rem" }}>
-                {isMatch ? "✓" : isInvalid ? "⚠️" : "⏳"}
-              </span>
-              <strong
-                style={{
-                  fontSize: "1rem",
-                  color: isMatch
-                    ? "var(--valid)"
-                    : isInvalid
-                    ? "var(--invalid)"
-                    : "var(--pending)",
-                }}
-              >
-                {isMatch
-                  ? "DỮ LIỆU TOÀN VẸN VÀ HỢP LỆ"
-                  : isInvalid
-                  ? "PHÁT HIỆN DỮ LIỆU BỊ SAI LỆCH"
-                  : checking
-                  ? "ĐANG KIỂM TRA ĐỐI SOÁT VỚI BLOCKCHAIN..."
-                  : "CHƯA ĐỐI SOÁT TOÀN VẸN"}
-              </strong>
-            </div>
-            <p
-              style={{
-                fontSize: "0.85rem",
-                color: isMatch ? "#065f46" : isInvalid ? "#991b1b" : "#92400e",
-                marginTop: "0.25rem",
-              }}
-            >
-              {checkResult?.message ||
-                (checking
-                  ? "Hệ thống đang truy vấn bằng chứng niêm phong từ Smart Contract..."
-                  : "Dữ liệu chưa được đối chiếu trực tiếp với Blockchain.")}
-            </p>
-            {checkResult?.reason && (
-              <div
-                style={{
-                  fontSize: "0.75rem",
-                  color: "var(--invalid)",
-                  marginTop: "0.2rem",
-                  fontWeight: 700,
-                }}
-              >
-                Nguyên nhân:{" "}
-                {checkResult.reason === "HASH_MISMATCH"
-                  ? "Mã băm CSDL không khớp với bản gốc đã niêm phong trên Smart Contract"
-                  : checkResult.reason === "VERSION_MISMATCH"
-                  ? "Lệch phiên bản giữa CSDL và Blockchain"
-                  : checkResult.reason === "ACTION_MISMATCH"
-                  ? "Trạng thái bản ghi không khớp với hành động trên Blockchain"
-                  : checkResult.reason === "MISSING_ON_CHAIN"
-                  ? "Không tìm thấy bằng chứng niêm phong trên Blockchain"
-                  : checkResult.reason}
-              </div>
+            <strong>{headline}</strong>
+            {check?.result === "INVALID" && check.reason && (
+              <span className="sd-reason">{REASON_LABEL[check.reason] || check.reason}</span>
             )}
+            {check && check.result !== "VALID" && <p>{check.message}</p>}
           </div>
-
-          <button
-            className="btn btn-sm btn-outline"
-            onClick={runCheck}
-            disabled={checking}
-          >
-            {checking ? "Đang kiểm tra..." : "Kiểm tra lại"}
+          <button className="btn btn-sm btn-outline" onClick={runCheck} disabled={checking}>
+            {checking ? "Đang kiểm tra…" : "Kiểm tra lại"}
           </button>
         </div>
 
-        {/* Side-by-Side Comparison: MySQL vs Blockchain */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: "1rem",
-            marginBottom: "1.5rem",
-          }}
-        >
-          {/* MySQL Side */}
-          <div
-            style={{
-              background: "#f8fafc",
-              padding: "1rem",
-              borderRadius: "8px",
-              border: "1px solid #e2e8f0",
-            }}
-          >
-            <h4
-              style={{
-                fontSize: "0.9rem",
-                color: "#0284c7",
-                marginBottom: "0.75rem",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.4rem",
-              }}
-            >
-              Dữ liệu điểm hiện tại (CSDL)
-            </h4>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "0.5rem",
-                fontSize: "0.8rem",
-                color: "#334155",
-              }}
-            >
-              <div>
-                Điểm:{" "}
-                <strong style={{ fontSize: "1.1rem", color: "var(--primary-ptit)" }}>
-                  {s.score}
-                </strong>
-              </div>
-              <div>
-                Phiên bản: <strong>v{s.version}</strong>
-              </div>
-              <div>
-                Trạng thái:{" "}
-                <span
-                  className={`badge ${
-                    s.status === "ACTIVE" ? "badge-valid" : "badge-invalid"
-                  }`}
-                  style={{ fontSize: "0.65rem" }}
-                >
-                  {s.status === "ACTIVE" ? "Đang dùng" : "Đã xóa"}
-                </span>
-              </div>
-              <div style={{ marginTop: "0.25rem" }}>
-                <div style={{ color: "#64748b", fontSize: "0.72rem" }}>
-                  Mã băm dữ liệu hiện tại (SHA-256):
-                </div>
-                <div
-                  className="mono"
-                  style={{
-                    fontSize: "0.68rem",
-                    color: "#334155",
-                    wordBreak: "break-all",
-                    background: "#ffffff",
-                    padding: "0.35rem 0.5rem",
-                    borderRadius: "4px",
-                    border: "1px solid #cbd5e1",
-                    marginTop: "0.2rem",
-                  }}
-                >
-                  {s.dataHash}
-                </div>
-              </div>
+        {check && (
+          <table className="sd-compare">
+            <thead>
+              <tr>
+                <th></th>
+                <th>MySQL</th>
+                <th>Blockchain</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Điểm</td>
+                <td>
+                  <strong className="sd-score">{check.databaseScore}</strong>
+                </td>
+                <td className="muted">chỉ lưu mã băm</td>
+                <td></td>
+              </tr>
+              <tr>
+                <td>Phiên bản</td>
+                <td>v{check.databaseVersion}</td>
+                <td>{check.blockchainVersion != null ? `v${check.blockchainVersion}` : "—"}</td>
+                <td>
+                  <Mark ok={versionOk} />
+                </td>
+              </tr>
+              <tr>
+                <td>Mã băm</td>
+                <td>
+                  <Hash value={check.databaseHash} head={10} tail={6} />
+                </td>
+                <td>{check.blockchainHash ? <Hash value={check.blockchainHash} head={10} tail={6} /> : "—"}</td>
+                <td>
+                  <Mark ok={hashOk} />
+                </td>
+              </tr>
+              <tr>
+                <td>Người ghi gần nhất</td>
+                <td className="muted">không lưu</td>
+                <td>
+                  <Signer signer={check.writer} />
+                </td>
+                <td></td>
+              </tr>
+              <tr>
+                <td>Thời gian ghi</td>
+                <td className="muted">—</td>
+                <td>{formatTime(check.blockchainTimestamp)}</td>
+                <td></td>
+              </tr>
+            </tbody>
+          </table>
+        )}
 
-              <div style={{ marginTop: "0.35rem", borderTop: "1px dashed #e2e8f0", paddingTop: "0.35rem" }}>
-                <div style={{ color: "#64748b", fontSize: "0.72rem" }}>
-                  Người thao tác & Mã Actor Hash (CSDL):
-                </div>
-                <div style={{ fontSize: "0.75rem", fontWeight: 600, color: "#1e293b", marginTop: "0.1rem" }}>
-                  {s.versions && s.versions.length > 0 && s.versions[s.versions.length - 1].actorFullName
-                    ? `${s.versions[s.versions.length - 1].actorFullName} (${s.versions[s.versions.length - 1].actorUsername || ""})`
-                    : s.versions && s.versions.length > 0 && s.versions[s.versions.length - 1].actorUsername
-                    ? s.versions[s.versions.length - 1].actorUsername
-                    : "Giảng viên / Admin"}
-                </div>
-                <div
-                  className="mono"
-                  style={{
-                    fontSize: "0.68rem",
-                    color: checkResult?.actorMatches === false ? "var(--invalid)" : "#334155",
-                    wordBreak: "break-all",
-                    background: "#ffffff",
-                    padding: "0.35rem 0.5rem",
-                    borderRadius: "4px",
-                    border: `1px solid ${checkResult?.actorMatches === false ? "var(--invalid-border)" : "#cbd5e1"}`,
-                    marginTop: "0.2rem",
-                  }}
-                >
-                  {checkResult?.databaseActorHash ||
-                    (s.versions && s.versions.length > 0 ? s.versions[s.versions.length - 1].actorHash : "Chưa có")}
-                </div>
-              </div>
+        <h3 className="sd-title">Ai đã ghi từng phiên bản</h3>
+        {!check || check.historyChecks.length === 0 ? (
+          <p className="muted">Chưa có lịch sử.</p>
+        ) : (
+          <div className="sd-versions">
+            {check.historyChecks.map((h) => {
+              const row = detail?.versions.find((v) => v.version === h.version);
+              const tone = h.matches ? "valid" : "invalid";
+              return (
+                <details key={h.version} className={`sd-version ${tone}`}>
+                  <summary>
+                    <span className="sd-v">v{h.version}</span>
+                    <span className="sd-act">{row?.action ?? "—"}</span>
+                    <strong className="sd-score">{row?.score ?? "?"}</strong>
+                    <span className="sd-who">{h.writer ? h.writer.fullName : "—"}</span>
+                    <span className="sd-time">{row ? new Date(row.createdAt).toLocaleDateString("vi-VN") : ""}</span>
+                    <span className={`badge badge-${tone}`}>{h.matches ? "Hợp lệ" : REASON_LABEL[h.reason || ""] || "Sai lệch"}</span>
+                  </summary>
+                  <dl className="sd-more">
+                    <dt>Người ký</dt>
+                    <dd>
+                      <Signer signer={h.writer} />
+                    </dd>
+                    <dt>Thời gian</dt>
+                    <dd>{formatTime(row?.blockchainTimestamp)}</dd>
+                    <dt>Hash MySQL</dt>
+                    <dd className="mono">{h.databaseHash || "—"}</dd>
+                    <dt>Hash chain</dt>
+                    <dd className="mono">{h.blockchainHash || "—"}</dd>
+                    <dt>Giao dịch</dt>
+                    <dd className="mono">
+                      {row?.transactionHash ? shortHash(row.transactionHash, 14, 8) : "—"}
+                      {row?.blockNumber ? ` · khối ${row.blockNumber}` : ""}
+                      {h.txOk === true && <span className="badge badge-valid">Khớp bằng chứng</span>}
+                      {h.txOk === false && <span className="badge badge-invalid">Không khớp</span>}
+                    </dd>
+                  </dl>
+                </details>
+              );
+            })}
+          </div>
+        )}
+
+        {detail && (
+          <details className="sd-tech">
+            <summary>Thông tin kỹ thuật</summary>
+            <div className="sd-tech-row">
+              <span>Record key</span>
+              <span className="mono">{detail.recordKey}</span>
             </div>
-          </div>
-
-          {/* Blockchain Side */}
-          <div
-            style={{
-              background: "#f8fafc",
-              padding: "1rem",
-              borderRadius: "8px",
-              border: "1px solid #e2e8f0",
-            }}
-          >
-            <h4
-              style={{
-                fontSize: "0.9rem",
-                color: "#7c3aed",
-                marginBottom: "0.75rem",
-                display: "flex",
-                alignItems: "center",
-                gap: "0.4rem",
-              }}
-            >
-              Bằng chứng niêm phong gốc (Blockchain)
-            </h4>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "0.5rem",
-                fontSize: "0.8rem",
-                color: "#334155",
-              }}
-            >
-              <div>
-                Phiên bản niêm phong:{" "}
-                <strong>
-                  {displayBcVersion != null ? `v${displayBcVersion}` : checking ? "..." : "N/A"}
-                </strong>
-              </div>
-              <div>
-                Thao tác ghi nhận:{" "}
-                <strong>{displayBcAction || (checking ? "Đang truy vấn..." : "N/A")}</strong>
-              </div>
-              <div>
-                Thời gian ghi nhận:{" "}
-                <span style={{ color: "#64748b" }}>
-                  {displayBcTimestamp || (checking ? "Đang truy vấn..." : "N/A")}
-                </span>
-              </div>
-              <div style={{ marginTop: "0.25rem" }}>
-                <div style={{ color: "#64748b", fontSize: "0.72rem" }}>
-                  Mã băm gốc đã niêm phong:
-                </div>
-                <div
-                  className="mono"
-                  style={{
-                    fontSize: "0.68rem",
-                    color: isMatch
-                      ? "var(--valid)"
-                      : isInvalid
-                      ? "var(--invalid)"
-                      : "#475569",
-                    wordBreak: "break-all",
-                    background: "#ffffff",
-                    padding: "0.35rem 0.5rem",
-                    borderRadius: "4px",
-                    border: `1px solid ${
-                      isMatch
-                        ? "var(--valid-border)"
-                        : isInvalid
-                        ? "var(--invalid-border)"
-                        : "#cbd5e1"
-                    }`,
-                    marginTop: "0.2rem",
-                    fontWeight: isMatch || isInvalid ? 600 : 400,
-                  }}
-                >
-                  {displayBcHash ||
-                    (checking
-                      ? "Đang đối soát dữ liệu với Blockchain..."
-                      : "Chưa tìm thấy bằng chứng niêm phong")}
-                </div>
-              </div>
-
-              <div style={{ marginTop: "0.35rem", borderTop: "1px dashed #e2e8f0", paddingTop: "0.35rem" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ color: "#64748b", fontSize: "0.72rem" }}>
-                    Bằng chứng Actor Hash (On-Chain):
-                  </span>
-                  {checkResult?.actorMatches === false ? (
-                    <span className="badge badge-invalid" style={{ fontSize: "0.6rem", padding: "0.1rem 0.35rem" }}>
-                      ⚠️ Lệch định danh
-                    </span>
-                  ) : checkResult?.blockchainActorHash ? (
-                    <span className="badge badge-valid" style={{ fontSize: "0.6rem", padding: "0.1rem 0.35rem" }}>
-                      ✓ Khớp người ký
-                    </span>
-                  ) : null}
-                </div>
-                <div
-                  className="mono"
-                  style={{
-                    fontSize: "0.68rem",
-                    color: checkResult?.actorMatches === false ? "var(--invalid)" : "#6d28d9",
-                    wordBreak: "break-all",
-                    background: "#ffffff",
-                    padding: "0.35rem 0.5rem",
-                    borderRadius: "4px",
-                    border: `1px solid ${checkResult?.actorMatches === false ? "var(--invalid-border)" : "#cbd5e1"}`,
-                    marginTop: "0.2rem",
-                    fontWeight: 600,
-                  }}
-                >
-                  {checkResult?.blockchainActorHash || (checking ? "Đang đối soát..." : "N/A")}
-                </div>
-                {checkResult?.writerAddress && (
-                  <div style={{ fontSize: "0.68rem", color: "#64748b", marginTop: "0.25rem" }}>
-                    Ví ký on-chain: <span className="mono" style={{ color: "#334155" }}>{checkResult.writerAddress.slice(0, 10)}...{checkResult.writerAddress.slice(-6)}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Record Key Proof info */}
-        <div
-          style={{
-            background: "#f8fafc",
-            padding: "0.75rem 1rem",
-            borderRadius: "8px",
-            border: "1px solid #e2e8f0",
-            marginBottom: "1.5rem",
-            fontSize: "0.75rem",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <span style={{ color: "#64748b", fontWeight: 600 }}>
-              Mã định danh bản ghi (Record Key):
-            </span>
-            <button
-              className="btn btn-outline btn-sm"
-              style={{ padding: "0.15rem 0.4rem", fontSize: "0.65rem" }}
-              onClick={() => copyToClipboard(s.recordKey, "recordKey")}
-            >
-              {copiedKey === "recordKey" ? "✓ Đã sao chép" : "Sao chép"}
-            </button>
-          </div>
-          <div
-            className="mono"
-            style={{ color: "#334155", wordBreak: "break-all", marginTop: "0.2rem" }}
-          >
-            {s.recordKey}
-          </div>
-        </div>
-
-        {/* Version History Timeline (Append-Only) */}
-        <div>
-          <h3
-            style={{
-              fontSize: "1rem",
-              fontWeight: 700,
-              marginBottom: "0.75rem",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.4rem",
-              color: "#1e293b",
-            }}
-          >
-            Lịch sử các phiên bản điểm ({displayVersions.length} phiên bản)
-          </h3>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
-            {displayVersions.length > 0 ? (
-              displayVersions.map((v) => {
-                return (
-                  <div
-                    key={v.id}
-                    style={{
-                      background: "#ffffff",
-                      border: "1px solid #e2e8f0",
-                      borderLeft: `4px solid ${
-                        v.isValid
-                          ? "var(--valid)"
-                          : v.isInvalid
-                          ? "var(--invalid)"
-                          : v.transactionHash
-                          ? "var(--valid)"
-                          : "#cbd5e1"
-                      }`,
-                      borderRadius: "8px",
-                      padding: "0.75rem 1rem",
-                      fontSize: "0.8rem",
-                      color: "#1e293b",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                      }}
-                    >
-                      <div>
-                        <strong>Phiên bản {v.version}</strong> ({v.action}) — Điểm:{" "}
-                        <strong style={{ color: "var(--primary-ptit)" }}>
-                          {v.score}
-                        </strong>
-                      </div>
-                      <span
-                        className={`badge ${
-                          v.isValid
-                            ? "badge-valid"
-                            : v.isInvalid
-                            ? "badge-invalid"
-                            : v.transactionHash
-                            ? "badge-valid"
-                            : "badge-pending"
-                        }`}
-                        style={{ fontSize: "0.65rem" }}
-                      >
-                        {v.isValid
-                          ? "Hợp lệ"
-                          : v.isInvalid
-                          ? "Sai lệch"
-                          : v.transactionHash
-                          ? "Đã niêm phong"
-                          : "Chờ kiểm tra"}
-                      </span>
-                    </div>
-
-                    <div
-                      className="mono"
-                      style={{ fontSize: "0.7rem", color: "#64748b", marginTop: "0.3rem" }}
-                    >
-                      Data Hash: {v.dataHash}
-                    </div>
-
-                    {/* Actor information & Actor Hash */}
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        marginTop: "0.35rem",
-                        fontSize: "0.73rem",
-                        background: "#f8fafc",
-                        padding: "0.35rem 0.6rem",
-                        borderRadius: "6px",
-                        border: "1px solid #e2e8f0",
-                      }}
-                    >
-                      <div>
-                        <span style={{ color: "#64748b" }}>Người thực hiện: </span>
-                        <strong>
-                          {v.actorFullName
-                            ? `${v.actorFullName} (${v.actorUsername})`
-                            : v.actorUsername
-                            ? v.actorUsername
-                            : "Giảng viên / Admin"}
-                        </strong>
-                        {v.actorRole && (
-                          <span
-                            className="badge"
-                            style={{
-                              marginLeft: "0.4rem",
-                              fontSize: "0.6rem",
-                              background: "#e0e7ff",
-                              color: "#3730a3",
-                            }}
-                          >
-                            {v.actorRole}
-                          </span>
-                        )}
-                      </div>
-                      {v.actorMatches === false ? (
-                        <span
-                          className="badge badge-invalid"
-                          style={{ fontSize: "0.6rem" }}
-                          title="Actor Hash trong CSDL không khớp với Blockchain Evidence!"
-                        >
-                          ⚠️ Mạo danh Actor Hash
-                        </span>
-                      ) : v.blockchainActorHash ? (
-                        <span className="badge badge-valid" style={{ fontSize: "0.6rem" }}>
-                          ✓ Khớp Actor Hash
-                        </span>
-                      ) : null}
-                    </div>
-
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "1fr 1fr",
-                        gap: "0.5rem",
-                        marginTop: "0.3rem",
-                        fontSize: "0.68rem",
-                      }}
-                    >
-                      <div>
-                        <span style={{ color: "#64748b" }}>Actor Hash (CSDL):</span>
-                        <div
-                          className="mono"
-                          style={{
-                            color: v.actorMatches === false ? "var(--invalid)" : "#334155",
-                            wordBreak: "break-all",
-                          }}
-                        >
-                          {v.actorHash || "Chưa có"}
-                        </div>
-                      </div>
-                      <div>
-                        <span style={{ color: "#64748b" }}>Actor Hash (On-Chain):</span>
-                        <div
-                          className="mono"
-                          style={{
-                            color: v.actorMatches === false ? "var(--invalid)" : "#6d28d9",
-                            wordBreak: "break-all",
-                          }}
-                        >
-                          {v.blockchainActorHash || v.actorHash || "Đang đối soát..."}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        fontSize: "0.7rem",
-                        color: "#64748b",
-                        marginTop: "0.35rem",
-                      }}
-                    >
-                      <span>
-                        Tx:{" "}
-                        {v.transactionHash
-                          ? `${v.transactionHash.slice(0, 18)}...`
-                          : "Ghi nhận Blockchain"}{" "}
-                        {v.blockNumber ? `(Block #${v.blockNumber})` : ""}
-                      </span>
-                      <span>{new Date(v.createdAt).toLocaleString("vi-VN")}</span>
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              <div style={{ color: "#64748b", fontSize: "0.85rem", padding: "1rem 0" }}>
-                Chưa có dữ liệu phiên bản lịch sử.
-              </div>
-            )}
-          </div>
-        </div>
+          </details>
+        )}
       </div>
     </div>
   );

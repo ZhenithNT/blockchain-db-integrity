@@ -1,119 +1,312 @@
+/** ABI của IntegrityRegistry (sinh từ artifacts sau khi biên dịch). */
 export const IntegrityRegistryABI = [
   {
-    type: "constructor",
-    inputs: [],
-    stateMutability: "nonpayable"
+    "inputs": [],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
   },
   {
-    type: "event",
-    name: "EvidenceAdded",
-    inputs: [
-      { name: "recordKey", type: "bytes32", indexed: true },
-      { name: "version", type: "uint64", indexed: true },
-      { name: "dataHash", type: "bytes32", indexed: false },
-      { name: "actorHash", type: "bytes32", indexed: false },
-      { name: "action", type: "uint8", indexed: false },
-      { name: "timestamp", type: "uint64", indexed: false },
-      { name: "writerAddress", type: "address", indexed: true }
-    ],
-    anonymous: false
-  },
-  {
-    type: "function",
-    name: "appendEvidence",
-    inputs: [
-      { name: "recordKey", type: "bytes32" },
-      { name: "dataHash", type: "bytes32" },
-      { name: "actorHash", type: "bytes32" },
-      { name: "expectedVersion", type: "uint64" },
-      { name: "action", type: "uint8" }
-    ],
-    outputs: [],
-    stateMutability: "nonpayable"
-  },
-  {
-    type: "function",
-    name: "exists",
-    inputs: [{ name: "recordKey", type: "bytes32" }],
-    outputs: [{ name: "", type: "bool" }],
-    stateMutability: "view"
-  },
-  {
-    type: "function",
-    name: "getEvidenceByVersion",
-    inputs: [
-      { name: "recordKey", type: "bytes32" },
-      { name: "version", type: "uint64" }
-    ],
-    outputs: [
+    "anonymous": false,
+    "inputs": [
       {
-        name: "",
-        type: "tuple",
-        components: [
-          { name: "dataHash", type: "bytes32" },
-          { name: "actorHash", type: "bytes32" },
-          { name: "version", type: "uint64" },
-          { name: "timestamp", type: "uint64" },
-          { name: "action", type: "uint8" },
-          { name: "writerAddress", type: "address" }
-        ]
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "recordKey",
+        "type": "bytes32"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint64",
+        "name": "version",
+        "type": "uint64"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes32",
+        "name": "dataHash",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "enum IntegrityRegistry.Action",
+        "name": "action",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "timestamp",
+        "type": "uint64"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "writer",
+        "type": "address"
       }
     ],
-    stateMutability: "view"
+    "name": "EvidenceAdded",
+    "type": "event"
   },
   {
-    type: "function",
-    name: "getLatestEvidence",
-    inputs: [{ name: "recordKey", type: "bytes32" }],
-    outputs: [
+    "anonymous": false,
+    "inputs": [
       {
-        name: "",
-        type: "tuple",
-        components: [
-          { name: "dataHash", type: "bytes32" },
-          { name: "actorHash", type: "bytes32" },
-          { name: "version", type: "uint64" },
-          { name: "timestamp", type: "uint64" },
-          { name: "action", type: "uint8" },
-          { name: "writerAddress", type: "address" }
-        ]
+        "indexed": true,
+        "internalType": "address",
+        "name": "writer",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "allowed",
+        "type": "bool"
       }
     ],
-    stateMutability: "view"
+    "name": "WriterChanged",
+    "type": "event"
   },
   {
-    type: "function",
-    name: "getAllRecordKeys",
-    inputs: [],
-    outputs: [{ name: "", type: "bytes32[]" }],
-    stateMutability: "view"
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "addWriter",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
   },
   {
-    type: "function",
-    name: "getRecordKeyAt",
-    inputs: [{ name: "index", type: "uint256" }],
-    outputs: [{ name: "", type: "bytes32" }],
-    stateMutability: "view"
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "recordKey",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "dataHash",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "uint64",
+        "name": "expectedVersion",
+        "type": "uint64"
+      },
+      {
+        "internalType": "enum IntegrityRegistry.Action",
+        "name": "action",
+        "type": "uint8"
+      }
+    ],
+    "name": "appendEvidence",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
   },
   {
-    type: "function",
-    name: "getRecordKeyCount",
-    inputs: [],
-    outputs: [{ name: "", type: "uint256" }],
-    stateMutability: "view"
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "recordKey",
+        "type": "bytes32"
+      }
+    ],
+    "name": "exists",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
   },
   {
-    type: "function",
-    name: "getVersionCount",
-    inputs: [{ name: "recordKey", type: "bytes32" }],
-    outputs: [{ name: "", type: "uint64" }],
-    stateMutability: "view"
+    "inputs": [],
+    "name": "getAllRecordKeys",
+    "outputs": [
+      {
+        "internalType": "bytes32[]",
+        "name": "",
+        "type": "bytes32[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
   },
   {
-    type: "function",
-    name: "owner",
-    inputs: [],
-    outputs: [{ name: "", type: "address" }],
-    stateMutability: "view"
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "recordKey",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getHistory",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "dataHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "version",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "timestamp",
+            "type": "uint64"
+          },
+          {
+            "internalType": "enum IntegrityRegistry.Action",
+            "name": "action",
+            "type": "uint8"
+          },
+          {
+            "internalType": "address",
+            "name": "writer",
+            "type": "address"
+          }
+        ],
+        "internalType": "struct IntegrityRegistry.Evidence[]",
+        "name": "",
+        "type": "tuple[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "recordKey",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getLatestEvidence",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "bytes32",
+            "name": "dataHash",
+            "type": "bytes32"
+          },
+          {
+            "internalType": "uint64",
+            "name": "version",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "timestamp",
+            "type": "uint64"
+          },
+          {
+            "internalType": "enum IntegrityRegistry.Action",
+            "name": "action",
+            "type": "uint8"
+          },
+          {
+            "internalType": "address",
+            "name": "writer",
+            "type": "address"
+          }
+        ],
+        "internalType": "struct IntegrityRegistry.Evidence",
+        "name": "",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "recordKey",
+        "type": "bytes32"
+      }
+    ],
+    "name": "getVersionCount",
+    "outputs": [
+      {
+        "internalType": "uint64",
+        "name": "",
+        "type": "uint64"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getWriters",
+    "outputs": [
+      {
+        "internalType": "address[]",
+        "name": "",
+        "type": "address[]"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "isWriter",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "owner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "account",
+        "type": "address"
+      }
+    ],
+    "name": "removeWriter",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
   }
 ] as const;

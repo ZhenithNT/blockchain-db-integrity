@@ -1,136 +1,31 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import type { UserRole } from "@integrity/shared";
 import { config } from "../config.js";
 import { prisma } from "../db.js";
+import { unlockWallet } from "./wallet.service.js";
 
 export async function loginUser(username: string, password: string) {
-  const user = await prisma.user.findUnique({
-    where: { username: username.trim() },
-  });
-
-  if (!user) {
+  const user = await prisma.user.findUnique({ where: { username: username.trim() } });
+  const ok = user ? await bcrypt.compare(password, user.passwordHash) : false;
+  if (!user || !ok) {
     throw { statusCode: 401, message: "Tên đăng nhập hoặc mật khẩu không chính xác." };
   }
 
-  const isMatch = await bcrypt.compare(password, user.passwordHash);
-  if (!isMatch) {
-    throw { statusCode: 401, message: "Tên đăng nhập hoặc mật khẩu không chính xác." };
+  // Mở khóa ví của admin này để ký giao dịch (tạo ví ở lần đăng nhập đầu).
+  let walletAddress: string | null = null;
+  try {
+    const wallet = await unlockWallet(user, password);
+    walletAddress = wallet?.address ?? null;
+  } catch (err: any) {
+    console.warn(`Không mở được ví của ${user.username}: ${err?.message || err}`);
   }
 
   const payload = {
     id: user.id,
     username: user.username,
     fullName: user.fullName || user.username,
-    role: user.role as UserRole,
-    studentCode: user.studentCode,
-    lecturerCode: user.lecturerCode,
-    avatarUrl: user.avatarUrl,
+    walletAddress,
   };
-
-  const token = jwt.sign(payload, config.jwtSecret, {
-    expiresIn: "24h",
-  });
-
-  return {
-    token,
-    user: payload,
-  };
-}
-
-export async function registerUser(data: {
-  username: string;
-  password: string;
-  fullName: string;
-  role: "STUDENT" | "LECTURER";
-  code?: string;
-  email?: string;
-  extraInfo?: string;
-}) {
-  const username = data.username.trim().toLowerCase();
-  const password = data.password.trim();
-  const fullName = data.fullName.trim();
-  const role = data.role;
-  const code = (data.code || username).trim().toUpperCase();
-  const email = data.email?.trim() || `${username}@ptit.edu.vn`;
-
-  if (!username || !password || !fullName) {
-    throw { statusCode: 400, message: "Vui lòng điền đầy đủ tên đăng nhập, mật khẩu và họ tên." };
-  }
-
-  const existingUser = await prisma.user.findUnique({
-    where: { username },
-  });
-  if (existingUser) {
-    throw { statusCode: 400, message: `Tên đăng nhập '${username}' đã tồn tại.` };
-  }
-
-  const passwordHash = await bcrypt.hash(password, 10);
-
-  const newUser = await prisma.$transaction(async (tx) => {
-    if (role === "STUDENT") {
-      await tx.student.upsert({
-        where: { studentCode: code },
-        update: { fullName, email },
-        create: {
-          studentCode: code,
-          fullName,
-          className: data.extraInfo || "D23CQAT01-B",
-          email,
-        },
-      });
-
-      return await tx.user.create({
-        data: {
-          username,
-          passwordHash,
-          fullName,
-          role: "STUDENT",
-          email,
-          studentCode: code,
-        },
-      });
-    } else {
-      await tx.lecturer.upsert({
-        where: { lecturerCode: code },
-        update: { fullName, email },
-        create: {
-          lecturerCode: code,
-          fullName,
-          faculty: data.extraInfo || "Khoa Công nghệ Thông tin 1",
-          email,
-        },
-      });
-
-      return await tx.user.create({
-        data: {
-          username,
-          passwordHash,
-          fullName,
-          role: "LECTURER",
-          email,
-          lecturerCode: code,
-        },
-      });
-    }
-  });
-
-  const payload = {
-    id: newUser.id,
-    username: newUser.username,
-    fullName: newUser.fullName,
-    role: newUser.role as UserRole,
-    studentCode: newUser.studentCode,
-    lecturerCode: newUser.lecturerCode,
-    avatarUrl: newUser.avatarUrl,
-  };
-
-  const token = jwt.sign(payload, config.jwtSecret, {
-    expiresIn: "24h",
-  });
-
-  return {
-    token,
-    user: payload,
-  };
+  const token = jwt.sign(payload, config.jwtSecret, { expiresIn: "24h" });
+  return { token, user: payload };
 }
